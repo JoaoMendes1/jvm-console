@@ -1,6 +1,4 @@
-# 🗄️ sql/ — schema versionado do __NOME__
-
-<!-- MODELO: opcional. Apague a pasta sql/ se o projeto não tiver banco. -->
+# 🗄️ sql/ — schema versionado do JVM Console
 
 > Todo DDL do projeto vive aqui, num arquivo numerado por ordem de aplicação. O servidor
 > **não cria tabela no boot**: ele só conecta e confere se as tabelas existem. Se faltar

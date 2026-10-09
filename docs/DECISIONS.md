@@ -1,6 +1,6 @@
-# 🧭 DECISIONS.md — decisões de arquitetura do __NOME__
+# 🧭 DECISIONS.md — decisões de arquitetura do JVM Console
 
-> Decisão estrutural fica aqui, não no [`ROADMAP.md`](ROADMAP.md). Escopo é o que vai ser
+> Decisão estrutural mora aqui, não no [`ROADMAP.md`](ROADMAP.md). Escopo é o que vai ser
 > feito; decisão é por que foi feito daquele jeito, e é o que evita que alguém desfaça sem
 > saber o custo.
 >
@@ -8,16 +8,39 @@
 > **Não entra:** log de commit, ajuste visual, texto.
 >
 > Formato: data, decisão, motivo. Entradas mais recentes no topo.
-
-<!-- MODELO: um bom motivo responde três coisas:
-1. Qual era o problema ou a necessidade.
-2. Por que esta opção e não a alternativa (diga qual foi a alternativa).
-3. O custo aceito, em negrito: "**Custo aceito:** ...". Toda decisão tem um; se não
-   achou o seu, ainda não entendeu a decisão. -->
+>
+> **As entradas de 06/10/2026 e 09/10/2026 foram tomadas no planejamento**, antes de
+> existir código, a partir do protótipo v4. Se a implementação mostrar que uma delas não
+> se sustenta, ela ganha entrada nova; esta não é apagada. Versões de biblioteca são
+> conferidas na hora de instalar, pela regra anti-legado do `AGENTS.md`.
 
 | Data | Decisão | Motivo |
 |---|---|---|
-| __DATA__ | Documentação e fluxo herdados do `modelo-projeto` | Os outros projetos chegaram ao mesmo padrão depois de retomadas caras: reler o código inteiro para lembrar o que estava decidido. Começar com ele pronto evita repetir isso. **Custo aceito:** documento para manter desde o primeiro dia, mesmo com o projeto pequeno. |
+| 09/10/2026 | Revisão espaçada com SM-2, gravando o histórico de cada resposta | O Console revisa poucas notas, não milhares de cartões, e o SM-2 cabe em poucas linhas que dá para explicar inteiras. O FSRS acerta mais a previsão, mas com cerca de 20 parâmetros ajustados pelo histórico, difíceis de conferir. Cada resposta fica gravada, então trocar de algoritmo depois não perde nada. **Custo aceito:** intervalos menos precisos que os do FSRS. |
+| 09/10/2026 | Pílulas atuais do portfólio recriadas no Console, com o mesmo endereço e a mesma data | São poucas, e recriar é mais simples que manter duas fontes. O endereço (`slug`) e a data originais são mantidos para não quebrar link já compartilhado. Os `.mdx` saem do portfólio no mesmo deploy em que ele passa a ler do Console, para o site nunca ficar sem pílulas. **Custo aceito:** o Console precisa deixar definir endereço e data antes da primeira publicação. |
+| 09/10/2026 | Tags livres, criadas no Console; o portfólio só confere o formato | A lista fechada do portfólio evitava tag com erro de digitação, mas obrigava a mexer no código para cada tag nova. No Console, o campo de tag sugere as existentes e pede confirmação para criar uma nova. O portfólio aceita qualquer tag que venha da API, desde que em minúsculas, sem espaço e sem acento. **Custo aceito:** a proteção contra erro de digitação passa a depender da confirmação na tela. |
+| 09/10/2026 | Corpo da pílula entra no portfólio como Markdown, nunca como MDX | O MDX executa expressões JavaScript (`{...}`) durante o build. Texto vindo de fora tratado como MDX seria código de terceiro rodando no build do site. **Custo aceito:** pílula vinda do Console não usa os componentes MDX do portfólio; as caixas de aviso são convertidas (ver pendentes). |
+| 09/10/2026 | Sanitização com DOMPurify no Console e rehype-sanitize no portfólio | A DOMPurify é a biblioteca mais usada e testada para limpar HTML no navegador, onde a prévia é desenhada. A rehype-sanitize entra na cadeia que o Astro já usa para transformar Markdown em HTML. As duas recebem a mesma lista fechada. **Custo aceito:** duas configurações para manter iguais; a lista fica escrita no `API.md`. |
+| 09/10/2026 | Acesso ao banco com `pg` e SQL escrito à mão, sempre com parâmetros (`$1`) | O schema é versionado à mão em `sql/`; um ORM quer gerar as próprias migrações e criaria uma segunda fonte de verdade. As partes difíceis do projeto (busca em português, RLS, usuário da sessão passado ao banco) são SQL puro, e cada consulta fica explicável. **Custo aceito:** os tipos das linhas são escritos à mão, validados com Zod, e nenhum valor pode ser colado na string do SQL. |
+| 09/10/2026 | Login com Google restrito à minha conta, pelo ID da conta; sessão guardada no PostgreSQL | O Google prova quem a pessoa é; o servidor decide se ela entra, comparando o ID da conta (que nunca muda, ao contrário do e-mail) com o do `.env`. Qualquer outra pessoa entra como convidado. Com a sessão no banco, dá para derrubar uma sessão. O fluxo usa o plugin oficial `@fastify/oauth2`. **Custo aceito:** perder o acesso à conta Google é perder o acesso ao Console. |
+| 09/10/2026 | Frontend em React com Vite, servido pelo próprio Fastify | O Vite gera arquivos estáticos que o Fastify entrega no mesmo endereço da API, como o Go faz com o React no AniDeck. Mesmo endereço significa cookie de sessão sem configuração extra e nada de CORS. O Next.js traria um segundo servidor fazendo o papel do Fastify. **Custo aceito:** sem renderização no servidor, a primeira tela depende do JavaScript carregar. |
+| 09/10/2026 | Fastify com TypeScript no servidor | Validação da entrada embutida, por schema, e plugins oficiais para o que o projeto precisa: cabeçalhos de segurança, limite de requisições, cookie, sessão e login OAuth. O Express exigiria montar isso com pacotes de autores diferentes; o Hono é pensado para rodar fora do Node. TypeScript, como no AniDeck e no portfólio, mostra erro de tipo no editor. **Custo aceito:** menos tutoriais que o Express, e a etapa de compilação do TypeScript. |
+| 06/10/2026 | Tipos de nota fixos: anotação, pílula e tutorial | Cada tipo tem comportamento próprio: pílula pode ir para o portfólio, tutorial tem passos com botão de copiar, anotação é privada e entra na revisão. Tipo criado pelo usuário, sem comportamento, seria só uma tag com outro nome. **Custo aceito:** tipo novo exige código, mesmo quando a necessidade é pequena. |
+| 06/10/2026 | Cor por projeto, numa paleta fixa; tag sem cor | Cor escolhida por tag vira dezenas de cores sem significado. Com a cor no projeto, a mesma cor aparece no cartão da nota, no gráfico de visitas e no painel, e passa a dizer alguma coisa. **Custo aceito:** a paleta limita quantos projetos têm cor distinta. |
+| 06/10/2026 | Visitas sem cookie e sem IP guardado | Contar visita não exige identificar pessoa. O visitante vira um hash do dia (IP, navegador e um sal que troca todo dia); o IP nunca é gravado. Sem cookie, não há banner de consentimento. **Custo aceito:** quem volta em outro dia conta como visitante novo, e o número é aproximado. |
+| 06/10/2026 | IA nunca altera a nota sozinha: tela de antes e depois, com recusa por mudança | A IA às vezes reescreve o que devia só corrigir, e numa pílula publicada isso vira frase que eu não escrevi. Com a diferença marcada palavra por palavra, a mudança indevida aparece antes de entrar. **Custo aceito:** um clique a mais em toda correção. |
+| 06/10/2026 | Chave do Gemini própria, só no servidor, com teto diário | Chave no navegador é chave pública: qualquer visitante copia pelo DevTools. Chave separada da do AniDeck impede que um projeto gaste a cota do outro, e o teto impede que um erro em laço gaste tudo. **Custo aceito:** duas chaves para administrar. |
+| 06/10/2026 | Convidado não usa IA real: só respostas prontas para as notas de exemplo | Limite por convidado não protege a cota, porque cada visita cria um espaço novo e o contador zera. Com respostas geradas antes, o recrutador vê o recurso funcionando a custo zero. **Custo aceito:** a demonstração só funciona nas notas de exemplo, como vieram. |
+| 06/10/2026 | Convidado ganha espaço próprio, temporário, sem publicar | Uma conta de demonstração compartilhada mostraria a um visitante o que outro escreveu; só leitura não mostraria o produto. Cada convidado é um usuário com prazo de 24 horas, apagado por rotina agendada. **Custo aceito:** a rotina de limpeza e um limite de criação de convidados por IP, para ninguém lotar o banco. |
+| 06/10/2026 | Pílula vai para o portfólio no build, não em tempo de execução | O portfólio continua estático: no build, ele busca as pílulas publicadas na API do Console. Publicar ou remover dispara um rebuild. Buscar em tempo de execução tornaria cada visita dependente do Console estar no ar. **Custo aceito:** a mudança aparece no site em cerca de 2 minutos, e o build do portfólio passa a depender do Console responder. O contrato está no `API.md`. |
+| 06/10/2026 | Privado por padrão; publicar e remover são ações explícitas | O Console é caderno antes de ser vitrine. Nota nasce privada, e só vai para o portfólio quem eu publicar, com remoção a um clique. **Custo aceito:** nenhuma nota aparece no site sem esse passo, mesmo as prontas. |
+| 06/10/2026 | Cor e destaque no texto por HTML de lista fechada, com biblioteca de sanitização dos dois lados | Markdown não tem cor. Aceitar HTML livre abriria XSS, e o modo convidado deixa estranhos escreverem. Só `<mark>` e `<span>`, só com as classes da paleta, passam; o resto vira texto. A mesma lista vale no Console e no portfólio, e a CSP do Caddy é a segunda camada. **Custo aceito:** sintaxe de HTML dentro do Markdown, e duas configurações de sanitização para manter iguais. |
+| 06/10/2026 | Notas em Markdown, não em editor de blocos | Markdown é texto: exporta, versiona, busca e vira pílula no portfólio quase sem conversão: só as caixas de aviso mudam de sintaxe (ver `API.md`). Um editor de blocos, estilo Notion, guardaria um formato próprio. **Custo aceito:** sem barra de formatação, escrever é menos confortável; por isso a barra entra no MVP. |
+| 06/10/2026 | Busca com o texto completo do PostgreSQL, em português e sem acento | "configuracao" precisa achar "configuração", e "publicar" precisa achar "publicada". O `ILIKE` não faz nenhum dos dois e fica lento com volume; um motor de busca separado seria mais uma peça para operar. **Custo aceito:** configurar o dicionário em português e a extensão `unaccent`. |
+| 06/10/2026 | PostgreSQL em container na própria VPS, não no Supabase | O plano gratuito do Supabase permite dois projetos ativos, e os dois já estão em uso (AniDeck e Grimoire). Na VPS, o banco fica na rede interna do compose, sem porta para a internet. **Custo aceito:** backup, atualização e segurança do banco passam a ser responsabilidade minha; o backup entra no MVP. |
+| 06/10/2026 | Node.js no servidor | O projeto acompanha a Formação Full-Stack da Rocketseat; AniDeck e Grimoire já cobrem o Go. **Custo aceito:** uma stack que ainda não usei em produção, com as armadilhas que isso traz. |
+| 06/10/2026 | Repositório público | O código e a documentação são parte do que o projeto mostra. **Custo aceito:** disciplina de nunca commitar segredo; a configuração do servidor fica no repositório privado `infra`. |
+| 06/10/2026 | Documentação e fluxo herdados do `modelo-projeto` | Os outros projetos chegaram ao mesmo padrão depois de retomadas caras: reler o código inteiro para lembrar o que estava decidido. Começar com ele pronto evita repetir isso. **Custo aceito:** documento para manter desde o primeiro dia, mesmo com o projeto pequeno. |
 
 ---
 
@@ -25,7 +48,6 @@
 
 Questões abertas, registradas para não se perderem. Cada uma diz **o que ela bloqueia**.
 
-<!-- MODELO: exemplo:
-- **Banco gerenciado ou container na VPS?** Bloqueia o primeiro arquivo de `sql/`. -->
-
-Nenhuma ainda.
+- **Caixas de aviso: quem converte o formato do GitHub (`> [!TIP]`) para o componente de
+  aviso do portfólio, e como?** Pode ser o Console, ao entregar pela API, ou o portfólio,
+  no build. Bloqueia o publicar da Fase 1.

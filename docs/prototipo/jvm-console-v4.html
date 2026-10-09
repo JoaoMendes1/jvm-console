@@ -1,0 +1,1234 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>JVM Console — protótipo v4</title>
+<!-- Protótipo navegável, sem back-end: todos os dados são fictícios. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700&family=Instrument+Serif:ital@1&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #07070A; --bg2: #0C0C11; --card: #101016; --card2: #15151D;
+    --line: rgba(255,255,255,.065); --line2: rgba(255,255,255,.13);
+    --fg: #F6F6F8; --fg2: #A3A3AE; --fg3: #6A6A76;
+    --acc: #FF9D48; --acc2: #FFD2A6; --vio: #B487FF; --live: #4ADE80; --red: #FF6B6B;
+    --acc-dim: color-mix(in srgb, var(--acc) 11%, transparent);
+    --vio-dim: color-mix(in srgb, var(--vio) 12%, transparent);
+    --disp: 'Bricolage Grotesque', system-ui, sans-serif;
+    --edit: 'Instrument Serif', Georgia, serif;
+    --body: 'Inter', system-ui, sans-serif;
+    --mono: 'JetBrains Mono', ui-monospace, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body { background: var(--bg); color: var(--fg); font-family: var(--body); font-size: 14px; line-height: 1.5; }
+  button { font: inherit; color: inherit; cursor: pointer; }
+  a { color: var(--acc); }
+  .mono { font-family: var(--mono); }
+  .ital { font-family: var(--edit); font-style: italic; font-weight: 400; }
+  .grad { background: linear-gradient(98deg, var(--acc2), var(--acc) 42%, var(--vio)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  [hidden] { display: none !important; }
+
+  /* ── aviso do protótipo ── */
+  .proto { position: fixed; left: 14px; bottom: 88px; z-index: 50; font-family: var(--mono); font-size: 10.5px; color: var(--fg3); background: var(--card); border: 1px solid var(--line2); border-radius: 8px; padding: 6px 10px; }
+
+  /* ── login ── */
+  .login { min-height: 100%; display: grid; place-items: center; padding: 24px;
+    background: radial-gradient(60% 50% at 20% 10%, color-mix(in srgb, var(--acc) 10%, transparent), transparent 70%),
+                radial-gradient(50% 50% at 90% 20%, color-mix(in srgb, var(--vio) 10%, transparent), transparent 70%), var(--bg); }
+  .login-box { width: min(440px, 100%); }
+  .marca { font-family: var(--mono); font-size: 12px; color: var(--fg3); letter-spacing: .08em; display: flex; align-items: center; gap: 10px; }
+  .marca b { color: var(--fg); font-weight: 500; }
+  .provisorio { font-size: 10px; color: var(--acc); background: var(--acc-dim); padding: 2px 8px; border-radius: 6px; }
+  .login h1 { font-family: var(--disp); font-weight: 600; font-size: 46px; line-height: 1.02; letter-spacing: -.035em; margin: 22px 0 14px; }
+  .login p { color: var(--fg2); font-size: 15px; margin: 0 0 30px; }
+  .btn { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; padding: 13px 18px; border-radius: 12px; border: 1px solid var(--line2); background: rgba(255,255,255,.04); font-weight: 500; transition: background .2s, border-color .2s; }
+  .btn:hover { background: rgba(255,255,255,.08); }
+  .btn.p { background: var(--acc); border-color: var(--acc); color: var(--bg); }
+  .btn.p:hover { background: var(--acc2); }
+  .ou { display: flex; align-items: center; gap: 12px; margin: 18px 0; color: var(--fg3); font-family: var(--mono); font-size: 11px; }
+  .ou::before, .ou::after { content: ""; flex: 1; height: 1px; background: var(--line2); }
+  .login .conv-nota { margin: 14px 0 0; font-size: 12.5px; color: var(--fg3); line-height: 1.55; }
+  .conv-nota b { color: var(--fg2); font-weight: 500; }
+
+  /* ── app ── */
+  .app { display: grid; grid-template-columns: 236px 1fr; min-height: 100%; }
+  .lateral { border-right: 1px solid var(--line); background: var(--bg2); padding: 18px 14px; display: flex; flex-direction: column; gap: 4px; position: sticky; top: 0; height: 100vh; }
+  .lateral .marca { padding: 4px 10px 18px; }
+  .nav-grupo { font-family: var(--mono); font-size: 10px; color: var(--fg3); letter-spacing: .1em; padding: 14px 10px 6px; }
+  .nav { display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px 10px; border: 0; border-radius: 9px; background: none; color: var(--fg2); text-align: left; font-size: 13.5px; }
+  .nav:hover { background: rgba(255,255,255,.04); color: var(--fg); }
+  .nav[aria-current="page"] { background: var(--card2); color: var(--fg); }
+  .nav .ico { width: 18px; height: 18px; flex: none; opacity: .85; }
+  .nav .qtd { margin-left: auto; font-family: var(--mono); font-size: 10.5px; color: var(--fg3); }
+  .fase { margin-left: auto; font-family: var(--mono); font-size: 9.5px; color: var(--vio); background: var(--vio-dim); padding: 1px 6px; border-radius: 5px; }
+  .usuario { margin-top: auto; border-top: 1px solid var(--line); padding: 14px 10px 0; display: flex; align-items: center; gap: 10px; font-size: 12.5px; color: var(--fg2); }
+  .avatar { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: linear-gradient(135deg, var(--acc), var(--vio)); color: var(--bg); font-weight: 700; font-size: 12px; }
+  .avatar-topo { display: none; flex: none; border: 0; width: 38px; height: 38px; }
+  .sair { margin-left: auto; border: 0; background: none; color: var(--fg3); font-size: 12px; }
+
+  .principal { min-width: 0; }
+  .faixa-conv { background: color-mix(in srgb, var(--vio) 14%, var(--bg)); border-bottom: 1px solid color-mix(in srgb, var(--vio) 30%, transparent); padding: 10px 28px; font-size: 13px; color: var(--fg2); display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .faixa-conv b { color: var(--fg); font-weight: 500; }
+  .faixa-conv .tempo { margin-left: auto; font-family: var(--mono); font-size: 11.5px; color: var(--vio); }
+  .topo { display: flex; align-items: center; gap: 14px; padding: 16px 28px; border-bottom: 1px solid var(--line); }
+  .busca-global { flex: 1; max-width: 520px; display: flex; align-items: center; gap: 10px; background: var(--card); border: 1px solid var(--line2); border-radius: 11px; padding: 9px 14px; color: var(--fg3); }
+  .busca-global input { flex: 1; background: none; border: 0; outline: 0; color: var(--fg); font: inherit; }
+  kbd { font-family: var(--mono); font-size: 10.5px; color: var(--fg3); border: 1px solid var(--line2); border-radius: 5px; padding: 1px 6px; }
+  .nova { margin-left: auto; width: auto; padding: 9px 16px; white-space: nowrap; flex: none; }
+  .busca-global { min-width: 0; }
+  .tela { padding: 28px; max-width: 1180px; }
+  .tela h1 { font-family: var(--disp); font-weight: 600; font-size: 32px; letter-spacing: -.03em; margin: 0 0 6px; }
+  .sub { color: var(--fg2); margin: 0 0 24px; }
+  .eyebrow { font-family: var(--mono); font-size: 11px; color: var(--acc); letter-spacing: .06em; margin-bottom: 8px; }
+
+  /* chips e filtros */
+  .filtros { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 10px; }
+  .rotulo { font-family: var(--mono); font-size: 10.5px; color: var(--fg3); min-width: 62px; }
+  .chip { font-family: var(--mono); font-size: 11.5px; padding: 6px 13px; border-radius: 999px; border: 1px solid var(--line2); background: none; color: var(--fg2); }
+  .chip[aria-pressed="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+  .tag { font-family: var(--mono); font-size: 10.5px; padding: 3px 9px; border-radius: 6px; background: var(--acc-dim); color: var(--acc); }
+  /* Filtros: tipo em botões (são só 3, fixos). Projeto e tag em menus com busca,
+     porque crescem: com 20 projetos, botões soltos ocupariam a tela. */
+  .barra-filtros { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 4px 0 18px; }
+  .seg { display: inline-flex; padding: 3px; border: 1px solid var(--line2); border-radius: 11px; background: var(--card); }
+  .seg button { font-family: var(--mono); font-size: 11.5px; padding: 6px 12px; border: 0; border-radius: 8px; background: none; color: var(--fg2); }
+  .seg button[aria-pressed="true"] { background: var(--fg); color: var(--bg); }
+  .pop-btn { display: inline-flex; align-items: center; justify-content: space-between; gap: 8px; font-family: var(--mono); font-size: 11.5px; padding: 8px 12px; border-radius: 10px; border: 1px solid var(--line2); background: none; color: var(--fg3); white-space: nowrap; }
+  .pop-btn b { color: var(--fg2); font-weight: 400; overflow: hidden; text-overflow: ellipsis; }
+  .pop-btn.ativo b { color: var(--fg); font-weight: 500; }
+  .pop-btn.ativo { border-color: var(--fg2); background: rgba(255,255,255,.05); }
+  .opcoes.pop { width: 250px; gap: 4px; }
+  .opcoes.pop input { margin: 2px 2px 6px; padding: 9px 10px; border-radius: 8px; border: 1px solid var(--line2); background: var(--bg2); color: var(--fg); font-size: 13px; outline: 0; }
+  .pop-lista { display: grid; max-height: 260px; overflow: auto; }
+  .pop-lista button { display: flex !important; align-items: center; gap: 9px; text-align: left; padding: 8px 10px; border: 0; border-radius: 8px; background: none; color: var(--fg); font-size: 13px; }
+  .pop-lista button:hover, .pop-lista button.sel { background: rgba(255,255,255,.07); }
+  .pop-lista button.vazio { color: var(--fg3); }
+  .pop-lista .qtd { margin-left: auto; font-family: var(--mono); font-size: 10.5px; color: var(--fg3); }
+  .pop-lista .grupo { padding: 8px 10px 4px; font-family: var(--mono); font-size: 9.5px; letter-spacing: .08em; color: var(--fg3); }
+  .ponto { width: 8px; height: 8px; border-radius: 50%; background: var(--c); flex: none; }
+  .limpar { border: 0; background: none; color: var(--acc); font-family: var(--mono); font-size: 11px; padding: 6px; }
+  .proj-nome { display: inline-flex; align-items: center; gap: 6px; }
+  .tag.v { background: var(--vio-dim); color: var(--vio); }
+  .tag.n { background: rgba(255,255,255,.05); color: var(--fg2); }
+  .tag.ok { background: color-mix(in srgb, var(--live) 12%, transparent); color: var(--live); }
+
+  /* lista de notas */
+  .lista { display: grid; gap: 10px; margin-top: 18px; }
+  .nota { display: grid; grid-template-columns: 1fr auto; gap: 6px 18px; align-items: center; padding: 16px 18px; border: 1px solid var(--line); background: var(--card); border-radius: 14px; cursor: pointer; transition: border-color .2s, background .2s; }
+  .nota:hover { border-color: var(--line2); background: var(--card2); }
+  .nota h3 { margin: 0; font-size: 15px; font-weight: 600; letter-spacing: -.01em; }
+  .nota p { margin: 0; grid-column: 1; color: var(--fg2); font-size: 13.5px; }
+  .nota .meta { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; grid-column: 1; font-family: var(--mono); font-size: 10.5px; color: var(--fg3); }
+  .nota .lado { grid-column: 2; grid-row: 1 / span 3; text-align: right; display: grid; gap: 6px; justify-items: end; }
+  .pub { font-family: var(--mono); font-size: 10.5px; display: inline-flex; align-items: center; gap: 6px; color: var(--live); }
+  .pub::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .pub.off { color: var(--fg3); }
+
+  /* editor */
+  .editor-topo { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
+  .editor-topo .titulo { flex: 1; min-width: 240px; resize: none; field-sizing: content; padding: 0; line-height: 1.2; background: none; border: 0; outline: 0; color: var(--fg); font-family: var(--disp); font-weight: 600; font-size: 28px; letter-spacing: -.03em; }
+  .salvo { font-family: var(--mono); font-size: 11px; color: var(--fg3); }
+  .editor { display: grid; grid-template-columns: 1fr 1fr 260px; gap: 16px; align-items: start; }
+  .painel { border: 1px solid var(--line); background: var(--card); border-radius: 14px; overflow: hidden; }
+  .painel-cab { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; border-bottom: 1px solid var(--line); font-family: var(--mono); font-size: 10.5px; color: var(--fg3); letter-spacing: .06em; }
+  textarea.md { width: 100%; min-height: 470px; resize: vertical; background: var(--bg2); border: 0; outline: 0; color: var(--fg); padding: 16px; font-family: var(--mono); font-size: 12.5px; line-height: 1.7; }
+  .previa { padding: 18px 20px; min-height: 470px; color: var(--fg2); font-size: 14.5px; line-height: 1.7; }
+  .previa h2 { color: var(--fg); font-family: var(--disp); font-size: 19px; letter-spacing: -.02em; margin: 18px 0 8px; }
+  .previa strong { color: var(--fg); font-weight: 600; }
+  .previa code { font-family: var(--mono); font-size: .88em; color: var(--fg); background: rgba(255,255,255,.06); padding: 1px 5px; border-radius: 4px; }
+  .previa pre { background: var(--bg2); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; overflow-x: auto; }
+  .previa pre code { background: none; padding: 0; }
+  .previa blockquote { margin: 14px 0; padding: 10px 14px; border-left: 3px solid var(--acc); background: var(--acc-dim); border-radius: 0 10px 10px 0; color: var(--fg); }
+  .previa mark, .tutorial mark { background: color-mix(in srgb, var(--acc) 35%, transparent); color: var(--fg); border-radius: 3px; padding: 0 2px; }
+  .previa mark.atual { background: var(--acc); color: var(--bg); }
+  .meta-lado { display: grid; gap: 14px; }
+  .campo { padding: 14px; display: grid; gap: 8px; }
+  .campo + .campo { border-top: 1px solid var(--line); }
+  .campo label, .campo .lbl { font-family: var(--mono); font-size: 10.5px; color: var(--fg3); letter-spacing: .06em; }
+  .campo select { background: var(--bg2); border: 1px solid var(--line2); border-radius: 8px; color: var(--fg); padding: 8px; font: inherit; }
+  .chips-linha { display: flex; flex-wrap: wrap; gap: 6px; }
+  .publicar { padding: 16px; display: grid; gap: 10px; }
+  .publicar h4 { margin: 0; font-size: 14px; }
+  .publicar p { margin: 0; color: var(--fg2); font-size: 12.5px; }
+  .estado-pub { font-family: var(--mono); font-size: 11.5px; padding: 8px 10px; border-radius: 8px; background: rgba(255,255,255,.04); color: var(--fg2); }
+  .estado-pub.on { background: color-mix(in srgb, var(--live) 10%, transparent); color: var(--live); }
+  .btn.sm { padding: 9px 12px; font-size: 13px; }
+  .btn.perigo { border-color: color-mix(in srgb, var(--red) 40%, transparent); color: var(--red); }
+  .btn[disabled] { opacity: .45; cursor: not-allowed; }
+  .historico { padding: 14px; display: grid; gap: 8px; font-size: 12.5px; color: var(--fg2); }
+  .historico div { display: flex; justify-content: space-between; gap: 10px; }
+  .historico span { font-family: var(--mono); font-size: 10.5px; color: var(--fg3); }
+
+  /* barra de busca na nota (Ctrl+F) */
+  .achar { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-bottom: 1px solid var(--line); background: var(--card2); }
+  .achar input { flex: 1; background: var(--bg2); border: 1px solid var(--line2); border-radius: 7px; color: var(--fg); padding: 6px 9px; font: inherit; font-size: 12.5px; outline: 0; }
+  .achar .cont { font-family: var(--mono); font-size: 11px; color: var(--fg3); min-width: 54px; text-align: center; }
+  .achar button { border: 1px solid var(--line2); background: none; border-radius: 7px; padding: 4px 9px; color: var(--fg2); }
+
+  /* busca */
+  .busca-grande { display: flex; align-items: center; gap: 12px; background: var(--card); border: 1px solid var(--line2); border-radius: 14px; padding: 14px 18px; margin-bottom: 14px; }
+  .busca-grande input { flex: 1; background: none; border: 0; outline: 0; color: var(--fg); font-size: 17px; font-family: var(--body); }
+  .resultado { padding: 16px 18px; border: 1px solid var(--line); background: var(--card); border-radius: 14px; }
+  .resultado h3 { margin: 0 0 6px; font-size: 15px; }
+  .resultado p { margin: 0 0 8px; color: var(--fg2); font-size: 13.5px; }
+  .resultado mark { background: color-mix(in srgb, var(--acc) 35%, transparent); color: var(--fg); border-radius: 3px; padding: 0 2px; }
+  .resultado .meta { font-family: var(--mono); font-size: 10.5px; color: var(--fg3); display: flex; gap: 10px; }
+
+  /* tutorial */
+  .tutorial { max-width: 760px; }
+  .passos { list-style: none; counter-reset: p; padding: 0; margin: 24px 0 0; display: grid; gap: 14px; }
+  .passo { counter-increment: p; display: grid; grid-template-columns: 34px 1fr; gap: 14px; padding: 16px 18px; border: 1px solid var(--line); background: var(--card); border-radius: 14px; }
+  .passo::before { content: counter(p); width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; font-family: var(--mono); font-size: 12px; background: var(--acc-dim); color: var(--acc); }
+  .passo h3 { margin: 4px 0 6px; font-size: 15px; }
+  .passo p { margin: 0 0 10px; color: var(--fg2); font-size: 13.5px; }
+  .passo pre { margin: 0; background: var(--bg2); border: 1px solid var(--line); border-radius: 10px; padding: 11px 13px; font-family: var(--mono); font-size: 12px; color: var(--fg); overflow-x: auto; position: relative; }
+  .copiar { position: absolute; top: 7px; right: 7px; font-family: var(--mono); font-size: 10px; border: 1px solid var(--line2); background: var(--card); color: var(--fg3); border-radius: 6px; padding: 2px 8px; }
+  .feito { display: flex; align-items: center; gap: 8px; margin-top: 10px; font-size: 12.5px; color: var(--fg3); }
+
+  /* revisão */
+  .rev-grid { display: grid; grid-template-columns: 1fr 300px; gap: 18px; align-items: start; }
+  .cartao-rev { border: 1px solid var(--line2); background: var(--card); border-radius: 18px; padding: 28px; }
+  .cartao-rev h2 { font-family: var(--disp); font-size: 24px; letter-spacing: -.02em; margin: 6px 0 10px; }
+  .cartao-rev .pergunta { color: var(--fg2); font-size: 15px; }
+  .resposta { margin-top: 18px; padding-top: 18px; border-top: 1px dashed var(--line2); color: var(--fg2); font-size: 14.5px; line-height: 1.7; }
+  .acoes-rev { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 22px; }
+  .acoes-rev .btn { flex-direction: column; gap: 2px; }
+  .acoes-rev small { font-family: var(--mono); font-size: 10px; color: var(--fg3); }
+  .fila { border: 1px solid var(--line); background: var(--card); border-radius: 14px; padding: 6px 0; }
+  .fila div { display: flex; justify-content: space-between; gap: 10px; padding: 10px 16px; font-size: 13px; color: var(--fg2); }
+  .fila div + div { border-top: 1px solid var(--line); }
+  .fila span { font-family: var(--mono); font-size: 10.5px; color: var(--fg3); white-space: nowrap; }
+
+  /* visitas e painel */
+  .aviso-dados { font-family: var(--mono); font-size: 10.5px; color: var(--vio); background: var(--vio-dim); padding: 3px 9px; border-radius: 6px; }
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
+  .stat { border: 1px solid var(--line); background: var(--card); border-radius: 14px; padding: 16px 18px; }
+  .stat b { display: block; font-family: var(--disp); font-size: 28px; font-weight: 600; letter-spacing: -.03em; }
+  .stat span { font-size: 12.5px; color: var(--fg3); }
+  .stat em { font-style: normal; font-family: var(--mono); font-size: 10.5px; color: var(--live); margin-left: 6px; }
+  .duas { display: grid; grid-template-columns: 1.4fr 1fr; gap: 12px; }
+  .grafico { padding: 18px; }
+  .barras { display: flex; align-items: flex-end; gap: 6px; height: 170px; margin-top: 10px; }
+  .barra { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; gap: 2px; }
+  .barra i { display: block; border-radius: 4px 4px 0 0; }
+  .barra i.a { background: var(--acc); }
+  .barra i.b { background: var(--vio); border-radius: 0; }
+  .barra i.c { background: var(--live); border-radius: 0; }
+  .dias { display: flex; gap: 6px; margin-top: 6px; }
+  .dias span { flex: 1; text-align: center; font-family: var(--mono); font-size: 9.5px; color: var(--fg3); }
+  .legenda { display: flex; gap: 14px; font-size: 12px; color: var(--fg2); margin-top: 12px; }
+  .legenda i { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 6px; }
+  .tabela { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .tabela td { padding: 10px 16px; border-top: 1px solid var(--line); color: var(--fg2); }
+  .tabela td:last-child { text-align: right; font-family: var(--mono); font-size: 12px; color: var(--fg); }
+  .tabela .barrinha { display: block; height: 4px; border-radius: 2px; background: var(--acc); margin-top: 6px; opacity: .7; }
+  .destaque-origem { padding: 14px 16px; border-top: 1px solid var(--line); font-size: 12.5px; color: var(--fg2); }
+  .destaque-origem b { color: var(--acc); font-weight: 500; }
+
+  .projetos { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .proj { border: 1px solid var(--line); background: var(--card); border-radius: 16px; padding: 18px; display: grid; gap: 12px; }
+  .proj-cab { display: flex; align-items: center; gap: 10px; }
+  .proj-cab h3 { margin: 0; font-size: 16px; }
+  .proj-cab .tag { margin-left: auto; }
+  .proj-num { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .proj-num div { background: var(--bg2); border: 1px solid var(--line); border-radius: 10px; padding: 10px; }
+  .proj-num b { display: block; font-family: var(--disp); font-size: 19px; }
+  .proj-num span { font-size: 11px; color: var(--fg3); }
+  .proj-linha { font-family: var(--mono); font-size: 11px; color: var(--fg3); display: flex; justify-content: space-between; gap: 10px; }
+  .spark { height: 28px; display: flex; align-items: flex-end; gap: 2px; }
+  .spark i { flex: 1; background: color-mix(in srgb, var(--acc) 55%, transparent); border-radius: 2px 2px 0 0; }
+  .futuro { border: 1px dashed color-mix(in srgb, var(--vio) 40%, transparent); border-radius: 14px; padding: 14px 16px; color: var(--fg2); font-size: 13px; margin-bottom: 16px; }
+  .futuro b { color: var(--vio); font-weight: 500; }
+
+
+  /* barra de formatação do editor */
+  .ferramentas { display: flex; flex-wrap: wrap; gap: 4px; padding: 6px 8px; border-bottom: 1px solid var(--line); background: var(--card2); }
+  .ferramentas button { flex: none; display: inline-flex; align-items: center; justify-content: center; gap: 4px; white-space: nowrap; min-width: 32px; height: 30px; padding: 0 8px; border: 1px solid transparent; border-radius: 7px; background: none; color: var(--fg2); font-size: 13px; }
+  .ferramentas button:hover { background: rgba(255,255,255,.06); color: var(--fg); border-color: var(--line2); }
+  .ferramentas .sep { flex: none; width: 1px; margin: 4px 4px; background: var(--line2); }
+  .ferramentas .cor { width: 14px; height: 14px; border-radius: 4px; display: inline-block; vertical-align: middle; }
+  .ferramentas .cor.laranja { background: var(--acc); } .ferramentas .cor.roxo { background: var(--vio); } .ferramentas .cor.verde { background: var(--live); }
+  .ferramentas .txt { font-weight: 700; text-decoration: underline 3px; text-underline-offset: 3px; }
+  .menu-cor { position: relative; display: inline-flex; }
+  /* Sem esta linha, o display: flex das opções venceria o atributo hidden. */
+  .menu-cor .opcoes[hidden] { display: none; }
+  .menu-cor .opcoes { position: absolute; top: 34px; left: 0; z-index: 5; display: flex; gap: 4px; padding: 6px; background: var(--card); border: 1px solid var(--line2); border-radius: 9px; box-shadow: 0 12px 30px rgba(0,0,0,.5); }
+
+  /* o que a barra produz, na prévia */
+  .previa em { font-style: italic; color: var(--fg); }
+  .previa h2.h1 { font-size: 22px; }
+  .previa h3 { color: var(--fg); font-size: 16px; margin: 16px 0 6px; }
+  .previa ul, .previa ol { padding-left: 22px; margin: 0 0 14px; }
+  .previa li { margin-bottom: 4px; }
+  .previa li.check { list-style: none; margin-left: -20px; }
+  .previa hr { border: 0; border-top: 1px solid var(--line2); margin: 22px 0; }
+  .previa table { width: 100%; border-collapse: collapse; margin: 10px 0 16px; font-size: 13.5px; }
+  .previa th, .previa td { border-bottom: 1px solid var(--line2); padding: 8px 10px 8px 0; text-align: left; }
+  .previa th { font-family: var(--mono); font-size: 10.5px; color: var(--fg3); font-weight: 400; }
+  .previa a { color: var(--acc); }
+  .previa mark { background: color-mix(in srgb, var(--acc) 30%, transparent); }
+  .previa mark.roxo { background: color-mix(in srgb, var(--vio) 30%, transparent); }
+  .previa mark.verde { background: color-mix(in srgb, var(--live) 25%, transparent); }
+  .previa .t-laranja { color: var(--acc); } .previa .t-roxo { color: var(--vio); } .previa .t-verde { color: var(--live); }
+  .aviso-callout { margin: 14px 0; padding: 12px 14px; border-radius: 10px; border-left: 3px solid; color: var(--fg); }
+  .aviso-callout b.tit { display: block; font-family: var(--mono); font-size: 10.5px; letter-spacing: .08em; margin-bottom: 4px; }
+  .aviso-callout.TIP { border-color: var(--live); background: color-mix(in srgb, var(--live) 9%, transparent); } .aviso-callout.TIP b.tit { color: var(--live); }
+  .aviso-callout.WARNING { border-color: var(--acc); background: var(--acc-dim); } .aviso-callout.WARNING b.tit { color: var(--acc); }
+  .aviso-callout.CAUTION { border-color: var(--red); background: color-mix(in srgb, var(--red) 9%, transparent); } .aviso-callout.CAUTION b.tit { color: var(--red); }
+  .aviso-callout.NOTE { border-color: var(--vio); background: var(--vio-dim); } .aviso-callout.NOTE b.tit { color: var(--vio); }
+  /* Botões do assistente no cabeçalho do editor. */
+  .assist { display: flex; gap: 6px; align-items: center; letter-spacing: 0; }
+  .mini { font-family: var(--mono); font-size: 11px; padding: 5px 10px; border-radius: 7px; border: 1px solid var(--line2); background: none; color: var(--fg2); white-space: nowrap; }
+  .mini:hover { color: var(--fg); border-color: var(--fg3); }
+  .mini.ia { color: var(--vio); border-color: color-mix(in srgb, var(--vio) 45%, transparent); }
+  .menu-cor .opcoes.coluna { flex-direction: column; width: 270px; padding: 6px; }
+  .menu-cor .opcoes.dir { left: auto; right: 0; }
+  .opcoes.coluna button { display: grid; gap: 3px; text-align: left; padding: 10px 12px; border: 0; border-radius: 8px; background: none; color: var(--fg); font-family: var(--sans, inherit); font-size: 13px; letter-spacing: 0; }
+  .opcoes.coluna button:hover { background: rgba(255,255,255,.06); }
+  .opcoes.coluna small { color: var(--fg3); font-size: 11.5px; line-height: 1.4; }
+
+  /* Tela de antes/depois. */
+  .modal-fundo { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: 20px; background: rgba(0,0,0,.6); backdrop-filter: blur(4px); }
+  .modal-fundo[hidden] { display: none; }
+  .modal { width: min(760px, 100%); max-height: min(86vh, 900px); display: flex; flex-direction: column; background: var(--bg2); border: 1px solid var(--line2); border-radius: 16px; box-shadow: 0 30px 80px rgba(0,0,0,.6); }
+  .modal-cab { display: flex; justify-content: space-between; align-items: start; gap: 12px; padding: 16px 18px; border-bottom: 1px solid var(--line); }
+  .modal-cab b { font-size: 16px; }
+  .rev-sub { display: block; margin-top: 4px; font-family: var(--mono); font-size: 11px; color: var(--fg3); }
+  .fechar { border: 0; background: none; color: var(--fg3); font-size: 16px; }
+  .rev-legenda { display: flex; gap: 14px; flex-wrap: wrap; padding: 10px 18px; font-family: var(--mono); font-size: 11px; color: var(--fg3); border-bottom: 1px solid var(--line); }
+  .dica-clique { margin-left: auto; }
+  .diff { overflow: auto; padding: 18px; font-family: var(--mono); font-size: 13px; line-height: 1.75; white-space: pre-wrap; word-break: break-word; color: var(--fg2); }
+  .diff del, .rev-legenda del { background: color-mix(in srgb, var(--red) 18%, transparent); color: #ffb3ad; text-decoration: line-through; border-radius: 3px; }
+  .diff ins, .rev-legenda ins { background: color-mix(in srgb, var(--live) 18%, transparent); color: #b6f5c9; text-decoration: none; border-radius: 3px; }
+  .mud { cursor: pointer; border-radius: 4px; outline: 1px dashed transparent; }
+  .mud:hover { outline-color: var(--fg3); }
+  /* Mudança recusada: volta o texto original, a sugestão fica apagada. */
+  .mud.recusada del { background: none; color: var(--fg2); text-decoration: none; }
+  .mud.recusada ins { background: none; color: var(--fg3); text-decoration: line-through; opacity: .5; }
+  .diff .vazio-diff { font-family: var(--sans, inherit); color: var(--fg2); white-space: normal; }
+  .diff .pensando { color: var(--vio); }
+  .modal-rodape { display: flex; gap: 10px; align-items: center; padding: 14px 18px; border-top: 1px solid var(--line); }
+  .modal-rodape .btn { width: auto; }
+  .rev-conta { margin-right: auto; font-family: var(--mono); font-size: 11px; color: var(--fg3); }
+  .bloqueado { font-family: var(--mono); font-size: 11px; color: var(--red); background: color-mix(in srgb, var(--red) 9%, transparent); padding: 1px 6px; border-radius: 5px; }
+
+  @media (max-width: 1100px) { .editor { grid-template-columns: 1fr 1fr; } .meta-lado { grid-column: 1 / -1; grid-template-columns: repeat(3, 1fr); } }
+  @media (max-width: 860px) {
+    .app { grid-template-columns: 1fr; }
+    /* No celular, a lateral vira uma barra fixa embaixo, ao alcance do polegar. */
+    .lateral { position: fixed; z-index: 40; left: 0; right: 0; bottom: 0; top: auto; height: auto; flex-direction: row; justify-content: space-around; gap: 0;
+      padding: 6px 6px calc(6px + env(safe-area-inset-bottom)); border-right: 0; border-top: 1px solid var(--line2);
+      background: color-mix(in srgb, var(--bg2) 88%, transparent); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
+    .lateral .marca, .nav-grupo, .usuario, .nav .qtd, .nav .fase { display: none; }
+    .nav { flex: 1; width: auto; flex-direction: column; gap: 3px; padding: 7px 2px; font-size: 10.5px; border-radius: 12px; text-align: center; position: relative; }
+    .nav .ico { width: 22px; height: 22px; }
+    .nav[aria-current="page"] { background: none; color: var(--acc); }
+    .nav[aria-current="page"]::before { content: ""; position: absolute; top: -7px; left: 30%; right: 30%; height: 2px; border-radius: 2px; background: var(--acc); }
+    .nav[data-badge]::after { content: attr(data-badge); position: absolute; top: 3px; left: calc(50% + 8px); font-family: var(--mono); font-size: 9px; background: var(--acc); color: var(--bg); border-radius: 999px; padding: 0 5px; }
+    .principal { padding-bottom: 84px; }
+    .proto { display: none; }
+    .avatar-topo { display: grid; }
+    .topo .nova { padding-left: 14px; padding-right: 14px; }
+    .editor-topo .titulo { font-size: 22px; min-width: 0; flex-basis: 100%; }
+    /* Barra de formatação numa linha só, rolando para o lado, como em apps de nota. */
+    .ferramentas { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; position: sticky; top: 0; z-index: 3; }
+    .editor, .rev-grid, .duas, .projetos { grid-template-columns: 1fr; }
+    .meta-lado { grid-template-columns: 1fr; }
+    .stats { grid-template-columns: repeat(2, 1fr); }
+    .busca-global kbd { display: none; }
+    .seg { width: 100%; } .seg button { flex: 1; padding: 7px 4px; }
+    .barra-filtros .menu-cor { flex: 1; min-width: 0; } .pop-btn { width: 100%; min-width: 0; }
+    .pop-lista { max-height: 38vh; }
+    .pop-btn { padding: 8px 10px; } .limpar span { display: none; } .limpar { font-size: 14px; padding: 6px 4px; }
+    .modal-fundo { padding: 0; align-items: end; }
+    .modal { max-height: 92vh; border-radius: 18px 18px 0 0; }
+    .dica-clique { margin-left: 0; flex-basis: 100%; }
+    .modal-rodape { flex-wrap: wrap; padding-bottom: calc(14px + env(safe-area-inset-bottom)); }
+    .rev-conta { flex-basis: 100%; }
+    .modal-rodape .btn { flex: 1; }
+    .tela, .topo { padding-left: 16px; padding-right: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="modal-fundo" id="revisao" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="rev-titulo">
+    <div class="modal-cab">
+      <div><b id="rev-titulo">Corrigir português</b><span id="rev-sub" class="rev-sub"></span></div>
+      <button class="fechar" id="rev-fechar" aria-label="Fechar">✕</button>
+    </div>
+    <div class="rev-legenda"><span><del>removido</del></span><span><ins>adicionado</ins></span><span class="dica-clique">toque numa mudança para recusar só ela</span></div>
+    <div class="diff" id="diff"></div>
+    <div class="modal-rodape">
+      <span id="rev-conta" class="rev-conta"></span>
+      <button class="btn sm" id="rev-recusar">Recusar tudo</button>
+      <button class="btn sm p" id="rev-aplicar">Aplicar</button>
+    </div>
+  </div>
+</div>
+<div class="proto">protótipo v4 · dados fictícios</div>
+
+<!-- ═════════════ LOGIN ═════════════ -->
+<section class="login" id="login">
+  <div class="login-box">
+    <div class="marca"><b>JVM Console</b></div>
+    <h1>Onde eu estudo,<br><span class="ital grad">publico e acompanho.</span></h1>
+    <p>Anotações, pílulas e tutoriais num lugar só. O que eu marco como publicado aparece no portfólio.</p>
+    <button class="btn p" data-entrar="dono">Entrar com Google</button>
+    <div class="ou">ou</div>
+    <button class="btn" data-entrar="convidado">Explorar como convidado</button>
+    <p class="conv-nota">Como convidado, você ganha <b>um espaço só seu, com notas de exemplo</b>. Pode criar, editar e buscar à vontade. Ele é apagado em 24 horas, e nada do que você fizer chega ao portfólio.</p>
+  </div>
+</section>
+
+<!-- ═════════════ APP ═════════════ -->
+<div class="app" id="app" hidden>
+  <aside class="lateral">
+    <div class="marca"><b>JVM Console</b></div>
+    <div class="nav-grupo">ESTUDO</div>
+    <button class="nav" data-tela="notas" aria-current="page"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h5"/></svg>Notas<span class="qtd">11</span></button>
+    <button class="nav" data-tela="busca"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>Busca</button>
+    <button class="nav" data-tela="revisao" data-badge="3"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 0 1 15.5-6.2L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15.5 6.2L3 16"/><path d="M3 21v-5h5"/></svg>Revisão<span class="qtd">3</span></button>
+    <div class="nav-grupo" data-so-dono>PROJETOS</div>
+    <button class="nav" data-tela="visitas" data-so-dono><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Visitas<span class="fase">fase 3</span></button>
+    <button class="nav" data-tela="painel" data-so-dono><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>Painel<span class="fase">fase 4</span></button>
+    <div class="usuario">
+      <span class="avatar" id="avatar">JV</span>
+      <span id="nome-usuario">João Victor</span>
+      <button class="sair" id="sair">sair</button>
+    </div>
+  </aside>
+
+  <div class="principal">
+    <div class="faixa-conv" id="faixa-conv" hidden>
+      <b>Modo convidado.</b> Este espaço é só seu e será apagado. Publicar no portfólio está desativado.
+      <span class="tempo">expira em 23h 41min</span>
+    </div>
+    <div class="topo">
+      <label class="busca-global">⌕ <input placeholder="Buscar nas notas" id="busca-topo"> <kbd>Ctrl K</kbd></label>
+      <button class="btn p nova" data-tela="editor">+ Nova nota</button>
+      <button class="avatar avatar-topo" id="sair-topo" title="Sair">JV</button>
+    </div>
+
+    <!-- ───── NOTAS ───── -->
+    <section class="tela" data-painel="notas">
+      <div class="eyebrow" id="contagem-notas"></div>
+      <h1>Notas</h1>
+      <p class="sub">Anotações privadas, pílulas e tutoriais. Só o que estiver publicado aparece no portfólio.</p>
+      <div class="barra-filtros">
+        <div class="seg" role="group" aria-label="Tipo">
+          <button aria-pressed="true" data-tipo="">todos</button><button aria-pressed="false" data-tipo="anotacao">anotação</button><button aria-pressed="false" data-tipo="pilula">pílula</button><button aria-pressed="false" data-tipo="tutorial">tutorial</button>
+        </div>
+        <span class="menu-cor"><button class="pop-btn" data-abre="f-proj" data-campo="proj"><b>Projeto</b> ▾</button>
+          <span class="opcoes coluna pop" data-menu="f-proj" hidden><input placeholder="Procurar projeto" data-busca="proj"><span class="pop-lista" data-lista="proj"></span></span></span>
+        <span class="menu-cor"><button class="pop-btn" data-abre="f-tag" data-campo="tag"><b>Tag</b> ▾</button>
+          <span class="opcoes coluna pop" data-menu="f-tag" hidden><input placeholder="Procurar tag" data-busca="tag"><span class="pop-lista" data-lista="tag"></span></span></span>
+        <span class="menu-cor"><button class="pop-btn" data-abre="f-pub" data-campo="pub"><b>Estado</b> ▾</button>
+          <span class="opcoes coluna pop" data-menu="f-pub" hidden><span class="pop-lista" data-lista="pub"></span></span></span>
+        <button class="limpar" id="limpar-filtros" hidden title="Limpar filtros">✕<span> limpar filtros</span></button>
+      </div>
+      <div class="lista" id="lista"></div>
+    </section>
+
+    <!-- ───── EDITOR ───── -->
+    <section class="tela" data-painel="editor" hidden style="max-width:none">
+      <div class="editor-topo">
+        <span class="tag" id="tipo-nota">pílula</span>
+        <textarea class="titulo" id="titulo-nota" rows="1" aria-label="Título">Erro de serviço externo não é 500</textarea>
+        <span class="salvo" id="salvo">salvo há 4 s</span>
+      </div>
+      <div class="editor">
+        <div class="painel">
+          <div class="painel-cab"><span>MARKDOWN</span>
+            <span class="assist">
+              <button class="mini" id="btn-organizar" title="Arruma títulos, listas, linhas em branco e espaços. Não muda nenhuma palavra e não usa IA.">Organizar</button>
+              <span class="menu-cor"><button class="mini ia" data-abre="ia" title="Assistente com IA">✦ IA ▾</button>
+                <span class="opcoes coluna dir" data-menu="ia" hidden>
+                  <button data-ia="portugues"><b>Corrigir português</b><small>Pontuação, acentos e concordância. Mantém as suas palavras.</small></button>
+                  <button data-ia="estrutura"><b>Melhorar estrutura</b><small>Sugere seções, destaques e avisos. Pode mudar frases.</small></button>
+                </span>
+              </span>
+            </span>
+          </div>
+          <div class="ferramentas" role="toolbar" aria-label="Formatação">
+            <button data-acao="negrito" title="Negrito (Ctrl+B)"><b>B</b></button>
+            <button data-acao="italico" title="Itálico (Ctrl+I)"><i>I</i></button>
+            <button data-acao="h2" title="Título">H2</button>
+            <button data-acao="h3" title="Subtítulo">H3</button>
+            <span class="sep"></span>
+            <button data-acao="lista" title="Lista">• ≡</button>
+            <button data-acao="numerada" title="Lista numerada">1.</button>
+            <button data-acao="tarefa" title="Lista de tarefas">☑</button>
+            <span class="sep"></span>
+            <button data-acao="link" title="Link">🔗</button>
+            <button data-acao="codigo" title="Código na linha">&lt;/&gt;</button>
+            <button data-acao="bloco" title="Bloco de código">{ }</button>
+            <button data-acao="citacao" title="Citação">❝</button>
+            <span class="sep"></span>
+            <span class="menu-cor"><button data-abre="destaque" title="Preenchimento"><span class="cor laranja"></span> ▾</button>
+              <span class="opcoes" data-menu="destaque" hidden>
+                <button data-acao="mark" data-cor="laranja" title="Destaque laranja"><span class="cor laranja"></span></button>
+                <button data-acao="mark" data-cor="roxo" title="Destaque roxo"><span class="cor roxo"></span></button>
+                <button data-acao="mark" data-cor="verde" title="Destaque verde"><span class="cor verde"></span></button>
+              </span></span>
+            <span class="menu-cor"><button data-abre="texto" title="Cor do texto"><span class="txt">A</span> ▾</button>
+              <span class="opcoes" data-menu="texto" hidden>
+                <button data-acao="cor" data-cor="laranja" style="color:var(--acc)"><b>A</b></button>
+                <button data-acao="cor" data-cor="roxo" style="color:var(--vio)"><b>A</b></button>
+                <button data-acao="cor" data-cor="verde" style="color:var(--live)"><b>A</b></button>
+              </span></span>
+            <span class="menu-cor"><button data-abre="aviso" title="Caixa de aviso">▣ ▾</button>
+              <span class="opcoes" data-menu="aviso" hidden>
+                <button data-acao="aviso" data-tipo="TIP" style="color:var(--live)">dica</button>
+                <button data-acao="aviso" data-tipo="NOTE" style="color:var(--vio)">nota</button>
+                <button data-acao="aviso" data-tipo="WARNING" style="color:var(--acc)">atenção</button>
+                <button data-acao="aviso" data-tipo="CAUTION" style="color:var(--red)">erro</button>
+              </span></span>
+            <span class="sep"></span>
+            <button data-acao="tabela" title="Tabela">⊞</button>
+            <button data-acao="divisor" title="Divisor">―</button>
+          </div>
+          <textarea class="md" id="md" spellcheck="true" lang="pt-BR"></textarea>
+        </div>
+        <div class="painel">
+          <div class="painel-cab"><span>PRÉVIA</span><span id="contagem-palavras">—</span></div>
+          <div class="achar">
+            <input id="achar" placeholder="Achar nesta nota" value="503">
+            <span class="cont" id="achar-cont">—</span>
+            <button id="achar-ant" aria-label="Anterior">↑</button>
+            <button id="achar-prox" aria-label="Próximo">↓</button>
+          </div>
+          <div class="previa" id="previa"></div>
+        </div>
+        <div class="meta-lado">
+          <div class="painel">
+            <div class="campo"><label>TIPO</label>
+              <select id="sel-tipo"><option>pílula</option><option>anotação</option><option>tutorial</option></select></div>
+            <div class="campo"><label>PROJETO</label>
+              <select id="sel-proj"><option>AniDeck</option><option>Grimoire</option><option>Infra</option><option>nenhum</option></select></div>
+            <div class="campo"><span class="lbl">TAGS</span>
+              <div class="chips-linha"><span class="tag">go</span><span class="tag n">+ tag</span></div></div>
+            <div class="campo"><span class="lbl">REVISÃO</span>
+              <div class="chips-linha"><span class="tag v">reler em 3 dias</span></div></div>
+          </div>
+          <div class="painel publicar">
+            <h4>Portfólio</h4>
+            <div class="estado-pub on" id="estado-pub">● publicada em joaomendes.dev.br</div>
+            <p id="pub-texto">Mudanças salvas aqui vão para o site no próximo rebuild, em cerca de 2 minutos.</p>
+            <button class="btn sm perigo" id="btn-pub">Remover do portfólio</button>
+          </div>
+          <div class="painel">
+            <div class="painel-cab"><span>HISTÓRICO</span><span>3 versões</span></div>
+            <div class="historico">
+              <div>Corrigi o código do Olheiro <span>hoje 10:12</span></div>
+              <div>Publicada <span>04 out</span></div>
+              <div>Criada <span>04 out</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ───── BUSCA ───── -->
+    <section class="tela" data-painel="busca" hidden>
+      <div class="eyebrow">busca em todas as notas</div>
+      <h1>Busca</h1>
+      <p class="sub">Procura no título e no texto, sem diferenciar acento: "configuracao" acha "configuração".</p>
+      <label class="busca-grande">⌕ <input id="busca" value="docker"></label>
+      <div class="filtros"><span class="rotulo">em</span>
+        <button class="chip" aria-pressed="true">tudo</button><button class="chip" aria-pressed="false">títulos</button><button class="chip" aria-pressed="false">código</button>
+      </div>
+      <div class="eyebrow" id="busca-qtd" style="margin-top:16px"></div>
+      <div class="lista" id="resultados"></div>
+    </section>
+
+    <!-- ───── TUTORIAL ───── -->
+    <section class="tela" data-painel="tutorial" hidden>
+      <div class="tutorial">
+        <button class="chip" data-tela="notas" style="margin-bottom:18px">← notas</button>
+        <div class="eyebrow">tutorial · Infra · publicado</div>
+        <h1>Configurar o Caddy como proxy reverso</h1>
+        <p class="sub">Do container no ar ao HTTPS automático, sem expor a porta da aplicação.</p>
+        <ol class="passos">
+          <li class="passo"><div><h3>Container com <code>expose</code>, nunca <code>ports</code></h3>
+            <p>Assim só o Caddy alcança a aplicação. Com <code>ports</code>, o Docker passa por cima do UFW.</p>
+            <pre>services:
+  app:
+    expose:
+      - "8080"<button class="copiar">copiar</button></pre>
+            <label class="feito"><input type="checkbox" checked> feito</label></div></li>
+          <li class="passo"><div><h3>Bloco do domínio no Caddyfile</h3>
+            <p>Uma linha por site. O certificado sai sozinho no primeiro acesso.</p>
+            <pre>meusite.joaomendes.dev.br {
+	reverse_proxy app:8080
+}<button class="copiar">copiar</button></pre>
+            <label class="feito"><input type="checkbox"> feito</label></div></li>
+          <li class="passo"><div><h3>Validar antes de recarregar</h3>
+            <p><code>up -d</code> não relê o Caddyfile. Valide e use <code>reload</code>, que mantém a configuração antiga se a nova tiver erro.</p>
+            <pre>docker compose exec caddy caddy validate --config /etc/caddy/Caddyfile
+docker compose exec caddy caddy reload --config /etc/caddy/Caddyfile<button class="copiar">copiar</button></pre>
+            <label class="feito"><input type="checkbox"> feito</label></div></li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- ───── REVISÃO ───── -->
+    <section class="tela" data-painel="revisao" hidden>
+      <div class="eyebrow">3 notas para hoje · sequência de 6 dias</div>
+      <h1>Revisão</h1>
+      <p class="sub">Notas que você marcou para reler. Responda de cabeça antes de abrir.</p>
+      <div class="rev-grid">
+        <div class="cartao-rev">
+          <span class="tag">ia</span>
+          <h2>RAG não serve para pergunta que cabe num SELECT</h2>
+          <p class="pergunta">Qual é a diferença entre embedding e RAG? Quando usar SQL em vez de busca por similaridade?</p>
+          <button class="btn" id="mostrar" style="margin-top:18px">Mostrar a nota</button>
+          <div class="resposta" id="resposta" hidden>
+            <b>Embedding</b> é o texto virando números que representam o significado. <b>RAG</b> busca os trechos mais parecidos e entrega ao modelo antes de ele responder. Pergunta com resposta exata, como contar registros, continua sendo <code>SELECT</code>.
+            <div class="acoes-rev">
+              <button class="btn">Esqueci<small>de novo amanhã</small></button>
+              <button class="btn">Lembrei com esforço<small>em 3 dias</small></button>
+              <button class="btn p">Lembrei fácil<small>em 7 dias</small></button>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="eyebrow">próximas</div>
+          <div class="fila">
+            <div>O Docker passa por cima do firewall <span>hoje</span></div>
+            <div>CREATE TABLE IF NOT EXISTS <span>hoje</span></div>
+            <div>Closures em JavaScript <span>amanhã</span></div>
+            <div>Goroutines e canais <span>em 2 dias</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ───── VISITAS ───── -->
+    <section class="tela" data-painel="visitas" hidden>
+      <div class="eyebrow">fase 3 · últimos 14 dias <span class="aviso-dados">dados fictícios</span></div>
+      <h1>Visitas</h1>
+      <p class="sub">Contagem sem cookies e sem guardar IP: conta a visita, não identifica a pessoa.</p>
+      <div class="stats">
+        <div class="stat"><b>412</b><span>visitas</span><em>+38%</em></div>
+        <div class="stat"><b>173</b><span>visitantes diferentes</span></div>
+        <div class="stat"><b>61</b><span>vindos do LinkedIn</span><em>+12</em></div>
+        <div class="stat"><b>2m 40s</b><span>tempo médio no portfólio</span></div>
+      </div>
+      <div class="duas">
+        <div class="painel grafico">
+          <div class="painel-cab" style="margin:-18px -18px 0;"><span>VISITAS POR DIA</span><span>14 dias</span></div>
+          <div class="barras" id="barras"></div>
+          <div class="dias" id="dias"></div>
+          <div class="legenda"><span><i style="background:var(--acc)"></i>Portfólio</span><span><i style="background:var(--vio)"></i>AniDeck</span><span><i style="background:var(--live)"></i>Grimoire</span></div>
+        </div>
+        <div class="painel">
+          <div class="painel-cab"><span>DE ONDE VIERAM</span><span>portfólio</span></div>
+          <table class="tabela">
+            <tr><td>LinkedIn<span class="barrinha" style="width:100%"></span></td><td>61</td></tr>
+            <tr><td>Direto<span class="barrinha" style="width:72%"></span></td><td>44</td></tr>
+            <tr><td>GitHub<span class="barrinha" style="width:49%"></span></td><td>30</td></tr>
+            <tr><td>Google<span class="barrinha" style="width:30%"></span></td><td>18</td></tr>
+            <tr><td>Gupy<span class="barrinha" style="width:16%"></span></td><td>10</td></tr>
+          </table>
+          <div class="destaque-origem"><b>3 visitas vindas da Gupy</b> no dia em que você se candidatou a uma vaga pela plataforma.</div>
+        </div>
+      </div>
+      <div class="painel" style="margin-top:12px">
+        <div class="painel-cab"><span>PÁGINAS MAIS VISTAS</span><span>todos os sites</span></div>
+        <table class="tabela">
+          <tr><td>joaomendes.dev.br/</td><td>188</td></tr>
+          <tr><td>joaomendes.dev.br/projetos/anideck</td><td>74</td></tr>
+          <tr><td>anideck.joaomendes.dev.br/</td><td>52</td></tr>
+          <tr><td>joaomendes.dev.br/pilulas</td><td>39</td></tr>
+          <tr><td>joaomendes.dev.br/projetos/grimoire</td><td>31</td></tr>
+        </table>
+      </div>
+    </section>
+
+    <!-- ───── PAINEL ───── -->
+    <section class="tela" data-painel="painel" hidden>
+      <div class="eyebrow">fase 4 · todos os projetos <span class="aviso-dados">dados fictícios</span></div>
+      <h1>Painel dos projetos</h1>
+      <p class="sub">O estado de cada projeto num lugar só: se está no ar, o último deploy, as issues e as visitas.</p>
+      <div class="futuro"><b>Fase futura.</b> Os dados viriam de três fontes: uma checagem de saúde de cada site, a API do GitHub (deploys e issues) e as visitas da fase 3.</div>
+      <div class="projetos" id="projetos"></div>
+    </section>
+  </div>
+</div>
+
+<script>
+  // ── dados fictícios ──
+  const NOTAS = [
+    { t: 'Erro de serviço externo não é 500', r: 'Quando a AniList caiu, o AniDeck respondia 500 numa tela, 502 em outra e 503 numa terceira.', tipo: 'pilula', proj: 'AniDeck', tags: ['go'], pub: true, quando: 'editada hoje' },
+    { t: 'RAG não serve para pergunta que cabe num SELECT', r: 'Embedding, RAG e por que contar animes do deck continua sendo trabalho do SQL.', tipo: 'pilula', proj: 'AniDeck', tags: ['ia', 'banco'], pub: true, quando: '05 out' },
+    { t: 'Configurar o Caddy como proxy reverso', r: 'Do container no ar ao HTTPS automático, sem expor a porta da aplicação.', tipo: 'tutorial', proj: 'Infra', tags: ['infra', 'docker'], pub: true, quando: '05 out', abre: 'tutorial' },
+    { t: 'Closures em JavaScript', r: 'Uma função que lembra as variáveis de onde foi criada. Exemplos do módulo 2 da Formação.', tipo: 'anotacao', proj: '', tags: ['javascript'], pub: false, quando: '04 out' },
+    { t: 'O Docker passa por cima do firewall', r: 'O UFW dizia que só três portas estavam abertas, mas a porta de um container respondia de fora.', tipo: 'pilula', proj: 'Infra', tags: ['infra', 'seguranca'], pub: true, quando: '04 out' },
+    { t: 'Criar chave SSH dedicada para deploy', r: 'Uma chave só para a GitHub Action, que pode ser revogada sem mexer no meu acesso.', tipo: 'tutorial', proj: 'Infra', tags: ['infra', 'deploy'], pub: false, quando: '03 out', abre: 'tutorial' },
+    { t: 'Goroutines e canais', r: 'Dúvidas que surgiram lendo o worker do AniDeck. Ainda não entendi o select com timeout.', tipo: 'anotacao', proj: 'AniDeck', tags: ['go'], pub: false, quando: '02 out' },
+    { t: 'reference() liga a pílula ao projeto', r: 'Um campo no frontmatter e o Astro confere no build se o projeto existe.', tipo: 'pilula', proj: 'Portfólio', tags: ['astro'], pub: true, quando: '03 out' },
+    { t: 'Lista fechada de HTML no Markdown', r: 'Por que a cor no texto passa por um filtro e qualquer outra tag vira texto puro.', tipo: 'anotacao', proj: 'JVM Console', tags: ['seguranca'], pub: false, quando: 'hoje' },
+    { t: 'Event loop do Node', r: 'Call stack, fila de tarefas e por que o await não trava o servidor.', tipo: 'anotacao', proj: 'Estudos Node', tags: ['javascript', 'node'], pub: false, quando: '01 out' },
+    { t: 'CREATE TABLE IF NOT EXISTS cria, mas nunca altera', r: 'O Go declarava a coluna como TEXT, o banco tinha uuid, e o boot dizia que estava tudo certo.', tipo: 'pilula', proj: 'Grimoire', tags: ['banco'], pub: true, quando: '04 out' },
+  ];
+  // Cada projeto tem uma cor, escolhida uma vez numa paleta fixa e usada em todo
+  // o app: cartão da nota, gráfico de Visitas e Painel. Tags não têm cor.
+  const PROJETOS = [
+    { n: 'Portfólio', c: '#FF9D48' }, { n: 'AniDeck', c: '#B487FF' }, { n: 'Grimoire', c: '#4ADE80' },
+    { n: 'JVM Console', c: '#60A5FA' }, { n: 'Infra', c: '#94A3B8' }, { n: 'Estudos Go', c: '#22D3EE' },
+    { n: 'Estudos Node', c: '#A3E635' }, { n: 'Estudos React', c: '#F472B6' },
+  ];
+  const corDo = (nome) => (PROJETOS.find((p) => p.n === nome) || {}).c || 'var(--fg3)';
+  const NOMES_TIPO = { pilula: 'pílula', tutorial: 'tutorial', anotacao: 'anotação' };
+
+  // ── navegação ──
+  const login = document.getElementById('login'), app = document.getElementById('app');
+  let convidado = false;
+  document.querySelectorAll('[data-entrar]').forEach((b) => b.addEventListener('click', () => {
+    convidado = b.dataset.entrar === 'convidado';
+    login.hidden = true; app.hidden = false;
+    document.getElementById('faixa-conv').hidden = !convidado;
+    document.querySelectorAll('[data-so-dono]').forEach((n) => (n.hidden = convidado));
+    document.getElementById('avatar').textContent = convidado ? 'C' : 'JV';
+    document.getElementById('sair-topo').textContent = convidado ? 'C' : 'JV';
+    document.getElementById('nome-usuario').textContent = convidado ? 'Convidado' : 'João Victor';
+    aplicarConvidadoNoEditor();
+    desenharLista();
+    mostrar('notas');
+  }));
+  ['sair', 'sair-topo'].forEach((id) => document.getElementById(id).addEventListener('click', () => { app.hidden = true; login.hidden = false; }));
+
+  function mostrar(tela) {
+    document.querySelectorAll('[data-painel]').forEach((p) => (p.hidden = p.dataset.painel !== tela));
+    document.querySelectorAll('.nav').forEach((n) => { if (n.dataset.tela === tela) n.setAttribute('aria-current', 'page'); else n.removeAttribute('aria-current'); });
+    window.scrollTo(0, 0);
+  }
+  document.addEventListener('click', (e) => { const b = e.target.closest('[data-tela]'); if (b) mostrar(b.dataset.tela); });
+
+  // ── lista de notas com filtros ──
+  const filtro = { tipo: '', proj: '', tag: '', pub: '' };
+  function desenharLista() {
+    const el = document.getElementById('lista');
+    const itens = NOTAS.filter((n) => (!filtro.tipo || n.tipo === filtro.tipo) && (!filtro.proj || n.proj === filtro.proj) && (!filtro.pub || (filtro.pub === 'sim') === n.pub) && (!filtro.tag || n.tags.includes(filtro.tag)));
+    el.innerHTML = itens.map((n) => `
+      <article class="nota" data-tela="${n.abre || 'editor'}">
+        <h3>${n.t}</h3>
+        <p>${n.r}</p>
+        <div class="meta"><span class="tag ${n.tipo === 'tutorial' ? 'v' : n.tipo === 'anotacao' ? 'n' : ''}">${NOMES_TIPO[n.tipo]}</span>${n.proj ? `<span class="proj-nome"><i class="ponto" style="--c:${corDo(n.proj)}"></i>${n.proj}</span>` : ''}<span>${n.tags.map((t) => '#' + t).join(' ')}</span><span>${n.quando}</span></div>
+        <div class="lado">${convidado ? '<span class="pub off">exemplo</span>' : `<span class="pub ${n.pub ? '' : 'off'}">${n.pub ? 'no portfólio' : 'privada'}</span>`}</div>
+      </article>`).join('') || '<p class="sub">Nenhuma nota com esses filtros.</p>';
+  }
+  document.querySelectorAll('.chip[data-f]').forEach((c) => c.addEventListener('click', () => {
+    filtro[c.dataset.f] = c.dataset.v;
+    document.querySelectorAll(`.chip[data-f="${c.dataset.f}"]`).forEach((o) => o.setAttribute('aria-pressed', String(o === c)));
+    desenharLista();
+  }));
+  desenharLista();
+
+  // Menus de projeto, tag e estado. Cada um mostra quantas notas tem, os mais
+  // usados primeiro, e aceita busca: escala para 20 projetos sem ocupar a tela.
+  const ROTULO_VAZIO = { proj: 'todos', tag: 'todas', pub: 'tudo' };
+  // Sem filtro, o botão mostra o nome do campo; com filtro, mostra o valor escolhido.
+  const ROTULO_BOTAO = { proj: 'Projeto', tag: 'Tag', pub: 'Estado' };
+  function opcoesDe(campo) {
+    if (campo === 'pub') return [{ v: 'sim', n: 'publicadas', q: NOTAS.filter((x) => x.pub).length }, { v: 'nao', n: 'privadas', q: NOTAS.filter((x) => !x.pub).length }];
+    if (campo === 'proj') return PROJETOS.map((p) => ({ v: p.n, n: p.n, c: p.c, q: NOTAS.filter((x) => x.proj === p.n).length })).sort((a, b) => b.q - a.q);
+    const tags = [...new Set(NOTAS.flatMap((x) => x.tags))];
+    return tags.map((t) => ({ v: t, n: '#' + t, q: NOTAS.filter((x) => x.tags.includes(t)).length })).sort((a, b) => b.q - a.q);
+  }
+  function desenharMenu(campo) {
+    const el = document.querySelector(`[data-lista="${campo}"]`);
+    const termo = (document.querySelector(`[data-busca="${campo}"]`)?.value || '').toLowerCase();
+    const itens = opcoesDe(campo).filter((o) => o.n.toLowerCase().includes(termo));
+    const botao = (o) => `<button data-campo="${campo}" data-v="${o.v}" class="${filtro[campo] === o.v ? 'sel' : ''} ${o.q ? '' : 'vazio'}">${o.c ? `<i class="ponto" style="--c:${o.c}"></i>` : ''}${o.n}<span class="qtd">${o.q}</span></button>`;
+    el.innerHTML = `<button data-campo="${campo}" data-v="" class="${filtro[campo] ? '' : 'sel'}">${ROTULO_VAZIO[campo]}</button>`
+      + (itens.length ? itens.map(botao).join('') : '<span class="grupo">nada encontrado</span>');
+  }
+  function aplicarFiltros() {
+    document.querySelectorAll('.pop-btn').forEach((b) => {
+      const v = filtro[b.dataset.campo];
+      const nome = b.dataset.campo === 'pub' ? (v === 'sim' ? 'publicadas' : v === 'nao' ? 'privadas' : '') : b.dataset.campo === 'tag' && v ? '#' + v : v;
+      b.querySelector('b').textContent = nome || ROTULO_BOTAO[b.dataset.campo];
+      b.classList.toggle('ativo', !!v);
+    });
+    document.querySelectorAll('.seg button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.tipo === filtro.tipo)));
+    document.getElementById('limpar-filtros').hidden = !Object.values(filtro).some(Boolean);
+    desenharLista();
+  }
+  ['proj', 'tag', 'pub'].forEach(desenharMenu);
+  document.querySelectorAll('.opcoes.pop').forEach((pop) => pop.addEventListener('click', (e) => {
+    e.stopPropagation(); // clicar na busca do menu não fecha o menu
+    const b = e.target.closest('button[data-campo]'); if (!b) return;
+    filtro[b.dataset.campo] = b.dataset.v; desenharMenu(b.dataset.campo); aplicarFiltros(); fecharMenus();
+  }));
+  document.querySelectorAll('[data-busca]').forEach((i) => i.addEventListener('input', () => desenharMenu(i.dataset.busca)));
+  document.querySelectorAll('[data-abre^="f-"]').forEach((b) => b.addEventListener('click', () => {
+    const i = document.querySelector(`[data-menu="${b.dataset.abre}"] input`); if (i) { i.value = ''; desenharMenu(i.dataset.busca); setTimeout(() => i.focus(), 0); }
+  }));
+  document.querySelectorAll('.seg button').forEach((b) => b.addEventListener('click', () => { filtro.tipo = b.dataset.tipo; aplicarFiltros(); }));
+  document.getElementById('limpar-filtros').addEventListener('click', () => { Object.keys(filtro).forEach((k) => (filtro[k] = '')); ['proj', 'tag', 'pub'].forEach(desenharMenu); aplicarFiltros(); });
+  document.getElementById('contagem-notas').textContent = `${NOTAS.length} notas · ${NOTAS.filter((n) => n.pub).length} publicadas · ${PROJETOS.length} projetos`;
+
+  // ── editor: Markdown simples com prévia ao vivo ──
+  const md = document.getElementById('md');
+  const PILULA = `Em agosto, a API da AniList ficou fora do ar e o AniDeck caiu junto. Um \`curl\` direto na API mostrou a causa: ela respondia 403 para todo mundo.
+
+## O que ficou visível depois
+
+A mesma falha aparecia com três códigos: 503 no ranking, 500 nos detalhes e 502 no agente do painel.
+
+**O código de status é a primeira pista de quem errou.** \`500\` diz "o meu servidor quebrou". \`503\` diz "um serviço do qual eu dependo está indisponível".
+
+> [!TIP] A lição geral
+> Falha de serviço externo vira ==503==, com o motivo no corpo da resposta.
+
+| Código | Significa |
+| --- | --- |
+| 500 | <span class="t-laranja">o meu código</span> quebrou |
+| 503 | um <mark class="roxo">serviço de fora</mark> está indisponível |
+
+- [x] padronizar os handlers
+- [ ] escrever o teste do handler de detalhes
+
+Isto é bloqueado pela lista fechada: <script>alert('xss')<\/script>
+
+\`\`\`go
+if errors.Is(err, anilist.ErrIndisponivel) {
+    http.Error(w, "fonte externa indisponível", 503)
+}
+\`\`\``;
+  md.value = PILULA;
+  // Rascunho de exemplo, escrito do jeito que sai na pressa: é nele que os
+  // botões Organizar e IA mostram serviço.
+  const RASCUNHO = `#Deploy do Caddy
+
+
+hoje o deploy deu erro por que o caddy não achou o certificado , ai eu rodei o comando denovo e funcionou.
+mais antes disso eu ja tinha conferido as portas  e os logs.
+* conferir as portas
+* ver os logs do container
+* reiniciar so no final
+
+
+
+fica a dica:sempre olhar os logs antes de reiniciar`;
+  function abrirNota(qual) {
+    const nova = qual === 'rascunho';
+    md.value = nova ? RASCUNHO : PILULA;
+    document.getElementById('titulo-nota').value = nova ? 'Rascunho: deploy do Caddy' : 'Erro de serviço externo não é 500';
+    const tipo = document.getElementById('tipo-nota');
+    tipo.textContent = nova ? 'anotação' : 'pílula'; tipo.className = 'tag' + (nova ? ' n' : '');
+    document.getElementById('sel-tipo').value = nova ? 'anotação' : 'pílula';
+    document.getElementById('sel-proj').value = nova ? 'Infra' : 'AniDeck';
+    if (!convidado) { publicada = !nova; desenharPub(); }
+    desenharPrevia();
+  }
+  document.addEventListener('click', (e) => {
+    if (e.target.closest('.nova')) abrirNota('rascunho');
+    else if (e.target.closest('.nota[data-tela="editor"]')) abrirNota('pilula');
+  });
+  const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const CORES = 'laranja|roxo|verde';
+  // Trechos de texto: tudo é escapado primeiro. Depois, só o que está na lista
+  // fechada volta a ser HTML. Qualquer outra tag continua texto, sem executar.
+  function inline(t) {
+    let h = esc(t);
+    h = h.replace(new RegExp(`&lt;mark class="(${CORES})"&gt;(.*?)&lt;/mark&gt;`, 'g'), '<mark class="$1">$2</mark>');
+    h = h.replace(new RegExp(`&lt;span class="t-(${CORES})"&gt;(.*?)&lt;/span&gt;`, 'g'), '<span class="t-$1">$2</span>');
+    h = h.replace(/&lt;script&gt;.*?&lt;\/script&gt;/g, '<span class="bloqueado">tag bloqueada</span>');
+    h = h.replace(/`([^`]+)`/g, '<code>$1</code>');
+    h = h.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    h = h.replace(/(^|[^*])\*([^*]+)\*/g, '$1<em>$2</em>');
+    h = h.replace(/==([^=]+)==/g, '<mark>$1</mark>');
+    h = h.replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+    return h;
+  }
+  function markdown(src) {
+    return src.split(/\n{2,}/).map((b) => {
+      if (b.startsWith('```')) return `<pre><code>${esc(b.replace(/^```\w*\n?/, '').replace(/```$/, ''))}</code></pre>`;
+      if (b.trim() === '---') return '<hr>';
+      if (b.startsWith('### ')) return `<h3>${inline(b.slice(4))}</h3>`;
+      if (b.startsWith('## ')) return `<h2>${inline(b.slice(3))}</h2>`;
+      if (b.startsWith('# ')) return `<h2 class="h1">${inline(b.slice(2))}</h2>`;
+      const aviso = b.match(/^> \[!(TIP|NOTE|WARNING|CAUTION)\]\s*(.*)\n?([\s\S]*)$/);
+      if (aviso) {
+        const nomes = { TIP: 'DICA', NOTE: 'NOTA', WARNING: 'ATENÇÃO', CAUTION: 'ERRO' };
+        const corpo = aviso[3].split('\n').map((l) => l.replace(/^>\s?/, '')).join(' ');
+        return `<div class="aviso-callout ${aviso[1]}"><b class="tit">${nomes[aviso[1]]}${aviso[2] ? ' · ' + esc(aviso[2]).toUpperCase() : ''}</b>${inline(corpo)}</div>`;
+      }
+      if (b.startsWith('> ')) return `<blockquote>${inline(b.replace(/^> ?/gm, ''))}</blockquote>`;
+      const linhas = b.split('\n');
+      if (linhas.every((l) => /^\|.*\|$/.test(l.trim())) && linhas.length >= 2) {
+        const cel = (l) => l.trim().slice(1, -1).split('|').map((c) => c.trim());
+        const [cab, , ...corpo] = linhas;
+        return `<table><tr>${cel(cab).map((c) => `<th>${inline(c)}</th>`).join('')}</tr>${corpo.map((l) => `<tr>${cel(l).map((c) => `<td>${inline(c)}</td>`).join('')}</tr>`).join('')}</table>`;
+      }
+      if (linhas.every((l) => /^- /.test(l))) return `<ul>${linhas.map((l) => {
+        const t = l.match(/^- \[( |x)\] (.*)/);
+        return t ? `<li class="check">${t[1] === 'x' ? '☑' : '☐'} ${inline(t[2])}</li>` : `<li>${inline(l.slice(2))}</li>`;
+      }).join('')}</ul>`;
+      if (linhas.every((l) => /^\d+\. /.test(l))) return `<ol>${linhas.map((l) => `<li>${inline(l.replace(/^\d+\. /, ''))}</li>`).join('')}</ol>`;
+      return `<p>${inline(b)}</p>`;
+    }).join('');
+  }
+  // Ctrl+F dentro da prévia: destaca todas as ocorrências e marca a atual.
+  let atual = 0;
+  function desenharPrevia() {
+    const previa = document.getElementById('previa');
+    previa.innerHTML = markdown(md.value);
+    const termo = document.getElementById('achar').value.trim();
+    let total = 0;
+    if (termo) {
+      const re = new RegExp(termo.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+      const andar = (no) => {
+        if (no.nodeType === 3) {
+          const t = no.textContent; if (!re.test(t)) return; re.lastIndex = 0;
+          const span = document.createElement('span');
+          span.innerHTML = esc(t).replace(re, (m) => `<mark>${m}</mark>`);
+          no.replaceWith(...span.childNodes);
+        } else if (no.nodeType === 1 && no.tagName !== 'MARK') [...no.childNodes].forEach(andar);
+      };
+      andar(previa);
+      const marks = previa.querySelectorAll('mark'); total = marks.length;
+      if (total) { atual = ((atual % total) + total) % total; marks[atual].classList.add('atual'); }
+    }
+    document.getElementById('achar-cont').textContent = termo ? (total ? `${atual + 1} de ${total}` : '0 de 0') : '—';
+    const palavras = md.value.split(/\s+/).filter(Boolean).length;
+    document.getElementById('contagem-palavras').textContent = `${palavras} palavras · ${Math.max(1, Math.ceil(palavras / 200))} min`;
+  }
+  md.addEventListener('input', () => { document.getElementById('salvo').textContent = 'salvando…'; desenharPrevia(); setTimeout(() => (document.getElementById('salvo').textContent = 'salvo agora'), 600); });
+  document.getElementById('achar').addEventListener('input', () => { atual = 0; desenharPrevia(); });
+  document.getElementById('achar-prox').addEventListener('click', () => { atual++; desenharPrevia(); });
+  document.getElementById('achar-ant').addEventListener('click', () => { atual--; desenharPrevia(); });
+  desenharPrevia();
+
+  // ── barra de formatação: tudo vira Markdown no texto ──
+  function envolver(antes, depois, exemplo) {
+    const i = md.selectionStart, f = md.selectionEnd, sel = md.value.slice(i, f) || exemplo;
+    md.setRangeText(antes + sel + depois, i, f, 'end');
+    md.setSelectionRange(i + antes.length, i + antes.length + sel.length);
+  }
+  function prefixarLinhas(prefixo) {
+    const ini = md.value.lastIndexOf('\n', md.selectionStart - 1) + 1;
+    const fim = md.value.indexOf('\n', md.selectionEnd); const f = fim === -1 ? md.value.length : fim;
+    const linhas = md.value.slice(ini, f).split('\n');
+    const novo = linhas.map((l, n) => (typeof prefixo === 'function' ? prefixo(n) : prefixo) + l).join('\n');
+    md.setRangeText(novo, ini, f, 'end');
+  }
+  // Blocos (aviso, tabela, código) entram depois da linha atual, sem apagar
+  // o que estiver selecionado.
+  function inserirBloco(texto) {
+    const fim = md.value.indexOf('\n', md.selectionEnd);
+    const i = fim === -1 ? md.value.length : fim;
+    md.setRangeText(`\n\n${texto}\n`, i, i, 'end');
+  }
+  const ACOES = {
+    negrito: () => envolver('**', '**', 'texto'),
+    italico: () => envolver('*', '*', 'texto'),
+    h2: () => prefixarLinhas('## '),
+    h3: () => prefixarLinhas('### '),
+    lista: () => prefixarLinhas('- '),
+    numerada: () => prefixarLinhas((n) => `${n + 1}. `),
+    tarefa: () => prefixarLinhas('- [ ] '),
+    link: () => envolver('[', '](https://)', 'texto do link'),
+    codigo: () => envolver('`', '`', 'codigo'),
+    bloco: () => inserirBloco('```\ncódigo aqui\n```'),
+    citacao: () => prefixarLinhas('> '),
+    mark: (b) => envolver(`<mark class="${b.dataset.cor}">`, '</mark>', 'destaque'),
+    cor: (b) => envolver(`<span class="t-${b.dataset.cor}">`, '</span>', 'texto'),
+    aviso: (b) => inserirBloco(`> [!${b.dataset.tipo}] Título\n> Texto do aviso.`),
+    tabela: () => inserirBloco('| Coluna | Coluna |\n| --- | --- |\n| valor | valor |'),
+    divisor: () => inserirBloco('---'),
+  };
+  document.querySelectorAll('[data-acao]').forEach((b) => b.addEventListener('click', () => {
+    md.focus(); ACOES[b.dataset.acao](b);
+    document.querySelectorAll('[data-menu]').forEach((m) => (m.hidden = true));
+    desenharPrevia();
+  }));
+  document.querySelectorAll('[data-abre]').forEach((b) => b.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const alvo = document.querySelector(`[data-menu="${b.dataset.abre}"]`);
+    const aberto = !alvo.hidden;
+    document.querySelectorAll('[data-menu]').forEach((m) => (m.hidden = true));
+    alvo.hidden = aberto;
+    abertoEm = performance.now();
+    // No celular a barra rola para o lado e cortaria o menu: ele passa a ser
+    // posicionado em relação à tela, logo abaixo do botão.
+    if (!alvo.hidden && matchMedia('(max-width: 860px)').matches) {
+      const r = b.getBoundingClientRect();
+      Object.assign(alvo.style, { position: 'fixed', top: `${r.bottom + 6}px`, left: `${Math.min(r.left, innerWidth - alvo.offsetWidth - 10)}px` });
+    } else alvo.removeAttribute('style');
+  }));
+  const fecharMenus = () => document.querySelectorAll('[data-menu]').forEach((m) => (m.hidden = true));
+  document.addEventListener('click', fecharMenus);
+  // Menu fixo na tela não acompanha a rolagem: rolou, fecha.
+  // (Ignora a rolagem do próprio toque que abriu o menu.)
+  let abertoEm = 0;
+  addEventListener('scroll', () => { if (performance.now() - abertoEm > 400) fecharMenus(); }, true);
+  md.addEventListener('keydown', (e) => {
+    if (!(e.ctrlKey || e.metaKey)) return;
+    const k = e.key.toLowerCase();
+    if (k === 'b') { e.preventDefault(); ACOES.negrito(); desenharPrevia(); }
+    if (k === 'i') { e.preventDefault(); ACOES.italico(); desenharPrevia(); }
+  });
+
+  // ── assistente: Organizar (sem IA) e IA (simulada no protótipo) ──
+  // Aplica uma função só nas linhas fora de bloco de código: código nunca é mexido.
+  function foraDoCodigo(texto, fn) {
+    let dentro = false;
+    return texto.split('\n').map((l) => {
+      if (l.startsWith('```')) { dentro = !dentro; return l; }
+      return dentro ? l : fn(l);
+    }).join('\n');
+  }
+  const ehLista = (l) => /^\s*(- |\d+\. )/.test(l);
+  const ehEspecial = (l) => /^(#|>|\||[-*+] |\d+\. |```)/.test(l) || l.trim() === '';
+
+  // Organizar: só forma. Títulos, marcadores de lista, espaços e linhas em branco.
+  function organizar(t) {
+    t = foraDoCodigo(t, (l) => l
+      .replace(/\s+$/, '')
+      .replace(/^(#{1,6})(?=[^#\s])/, '$1 ')
+      .replace(/^(\s*)[*+]\s+/, '$1- ')
+      .replace(/(\S) {2,}(?=\S)/g, '$1 '));
+    const ls = t.split('\n'), saida = [];
+    ls.forEach((l, n) => {
+      const ant = saida[saida.length - 1];
+      const precisaRespiro = l !== '' && ant !== undefined && ant !== '' && (
+        /^#/.test(l) || /^#/.test(ant) || (ehLista(l) && !ehLista(ant)) || (!ehLista(l) && l !== '' && ehLista(ant)));
+      if (precisaRespiro) saida.push('');
+      if (l === '' && ant === '') return;
+      saida.push(l);
+    });
+    return saida.join('\n').trim();
+  }
+
+  // Corrigir português (simulado): na versão real, o Gemini recebe o texto com a
+  // instrução de corrigir só pontuação, acentos e concordância, sem trocar palavras.
+  const CORRECOES = [
+    [/\bpor que (?=o |a |os |as |eu |ele |ela )/g, 'porque '],
+    [/\bai eu\b/g, 'aí eu'], [/\bdenovo\b/g, 'de novo'], [/\bmais antes\b/g, 'mas antes'],
+    [/\bja\b/g, 'já'], [/\bso\b/g, 'só'], [/\bcaddy\b/g, 'Caddy'], [/\bdocker\b/g, 'Docker'], [/\bgithub\b/g, 'GitHub'],
+    [/ +([,.;!?])/g, '$1'], [/([,;:])(?=\p{L})/gu, '$1 '],
+  ];
+  function corrigir(t) {
+    const linhas = foraDoCodigo(t, (l) => {
+      if (/^(\||>|```)/.test(l)) return l;
+      // Trechos de `código` na linha ficam de fora das correções.
+      l = l.split(/(`[^`]*`)/).map((p, k) => (k % 2 ? p : CORRECOES.reduce((x, [re, por]) => x.replace(re, por), p))).join('');
+      if (!ehEspecial(l)) l = l.replace(/^\p{Ll}/u, (c) => c.toUpperCase());
+      return l.replace(/([.!?] )(\p{Ll})/gu, (_, a, c) => a + c.toUpperCase());
+    }).split('\n');
+    // Parágrafo que termina sem pontuação ganha ponto final.
+    let dentro = false;
+    return linhas.map((l, n) => {
+      if (l.startsWith('```')) dentro = !dentro;
+      return !dentro && !ehEspecial(l) && /\p{L}$/u.test(l) && (linhas[n + 1] ?? '') === '' ? l + '.' : l;
+    }).join('\n');
+  }
+
+  // Melhorar estrutura (simulado): resposta pronta para o rascunho de exemplo.
+  function estruturar(t) {
+    if (!t.includes('deploy deu erro')) return t;
+    return `# Deploy do Caddy falhou por falta do certificado
+
+## O que aconteceu
+
+Hoje o deploy deu erro porque o Caddy não achou o certificado. Rodei o comando de novo e funcionou.
+
+## O que eu já tinha conferido
+
+- as portas
+- os logs do container
+
+E deixei para reiniciar só no final.
+
+> [!TIP] Fica a dica
+> Sempre olhar os ==logs== antes de reiniciar.`;
+  }
+
+  // Diferença palavra por palavra (LCS), agrupada em mudanças que dá para recusar uma a uma.
+  const pedacos = (t) => t.match(/\s+|[\p{L}\p{N}_]+|[^\s\p{L}\p{N}_]/gu) || [];
+  function diferenca(a, b) {
+    const A = pedacos(a), B = pedacos(b), n = A.length, m = B.length;
+    const T = Array.from({ length: n + 1 }, () => new Uint16Array(m + 1));
+    for (let i = n - 1; i >= 0; i--) for (let j = m - 1; j >= 0; j--)
+      T[i][j] = A[i] === B[j] ? T[i + 1][j + 1] + 1 : Math.max(T[i + 1][j], T[i][j + 1]);
+    const ops = []; let i = 0, j = 0;
+    const empurrar = (tipo, txt) => {
+      const ult = ops[ops.length - 1];
+      if (tipo === 'igual') { if (ult && ult.tipo === 'igual') ult.txt += txt; else ops.push({ tipo, txt }); return; }
+      if (!ult || ult.tipo !== 'mud') ops.push({ tipo: 'mud', del: '', ins: '' });
+      ops[ops.length - 1][tipo] += txt;
+    };
+    while (i < n && j < m) {
+      if (A[i] === B[j]) { empurrar('igual', A[i]); i++; j++; }
+      else if (T[i + 1][j] >= T[i][j + 1]) empurrar('del', A[i++]);
+      else empurrar('ins', B[j++]);
+    }
+    while (i < n) empurrar('del', A[i++]);
+    while (j < m) empurrar('ins', B[j++]);
+    // Duas mudanças separadas só por um espaço viram uma: "denovo" → "de novo"
+    // aparece como uma troca, não como duas.
+    for (let k = ops.length - 3; k >= 0; k--) {
+      const [x, y, z] = [ops[k], ops[k + 1], ops[k + 2]];
+      if (x.tipo === 'mud' && y.tipo === 'igual' && /^ $/.test(y.txt) && z.tipo === 'mud')
+        ops.splice(k, 3, { tipo: 'mud', del: x.del + ' ' + z.del, ins: x.ins + ' ' + z.ins });
+    }
+    return ops;
+  }
+
+  let ops = [];
+  const modal = document.getElementById('revisao'), diffEl = document.getElementById('diff');
+  function contarMudancas() {
+    const total = ops.filter((o) => o.tipo === 'mud').length;
+    const aceitas = ops.filter((o) => o.tipo === 'mud' && !o.recusada).length;
+    document.getElementById('rev-conta').textContent = total ? `${aceitas} de ${total} mudanças aceitas` : '';
+    document.getElementById('rev-aplicar').disabled = !total;
+    document.getElementById('rev-recusar').textContent = total ? 'Recusar tudo' : 'Fechar';
+  }
+  function desenharDiff() {
+    diffEl.innerHTML = ops.map((o, k) => (o.tipo === 'igual' ? esc(o.txt)
+      : `<span class="mud${o.recusada ? ' recusada' : ''}" data-k="${k}">${o.del ? `<del>${esc(o.del)}</del>` : ''}${o.ins ? `<ins>${esc(o.ins)}</ins>` : ''}</span>`)).join('');
+    if (!ops.some((o) => o.tipo === 'mud')) diffEl.innerHTML = '<p class="vazio-diff">Nada para mudar neste texto.</p>';
+    contarMudancas();
+  }
+  diffEl.addEventListener('click', (e) => {
+    const m = e.target.closest('.mud'); if (!m) return;
+    const o = ops[m.dataset.k]; o.recusada = !o.recusada; desenharDiff();
+  });
+  const MODOS = {
+    organizar: { titulo: 'Organizar', sub: 'sem IA · só forma, nenhuma palavra muda', fn: organizar, ia: false },
+    portugues: { titulo: 'Corrigir português', sub: 'IA · mantém as suas palavras', fn: corrigir, ia: true },
+    estrutura: { titulo: 'Melhorar estrutura', sub: 'IA · confira se o sentido continua o mesmo', fn: estruturar, ia: true },
+  };
+  // Estados do exemplo para os quais existe resposta pronta (o caminho da demonstração).
+  const textosDeExemplo = () => {
+    const o = organizar(RASCUNHO), c = corrigir(RASCUNHO);
+    return new Set([PILULA, RASCUNHO, o, c, corrigir(o), organizar(c)]);
+  };
+  function abrirRevisao(modo) {
+    const M = MODOS[modo];
+    document.getElementById('rev-titulo').textContent = M.titulo;
+    let sub = M.sub;
+    // Convidado nunca chama a IA de verdade: recebe respostas prontas, geradas
+    // antes, para as notas de exemplo. Custo zero, e a cota fica toda com você.
+    if (M.ia && convidado) sub = 'demonstração · resposta pronta, sem IA de verdade';
+    document.getElementById('rev-sub').textContent = sub;
+    modal.hidden = false;
+    if (M.ia && convidado && !textosDeExemplo().has(md.value)) {
+      ops = []; diffEl.innerHTML = '<p class="vazio-diff">No modo convidado, a IA é uma demonstração com respostas prontas, que só existem para as notas de exemplo como vieram. Este texto foi editado, então não há resposta pronta para ele. Para ver funcionando, abra <b>+ Nova nota</b> e use os botões sem editar. O <b>Organizar</b> funciona em qualquer texto, porque não usa IA.</p>';
+      contarMudancas(); return;
+    }
+    const gerar = () => {
+      ops = diferenca(md.value, M.fn(md.value)); desenharDiff();
+      if (modo === 'estrutura' && !ops.some((o) => o.tipo === 'mud'))
+        diffEl.innerHTML = '<p class="vazio-diff">Neste protótipo, a sugestão de estrutura só está pronta para a nota nova. Clique em <b>+ Nova nota</b> e teste lá. Na versão real, o Gemini responde para qualquer texto.</p>';
+    };
+    if (M.ia) {
+      diffEl.innerHTML = convidado ? '<span class="pensando">✦ carregando a resposta pronta…</span>' : '<span class="pensando">✦ Gemini lendo o texto…</span>';
+      document.getElementById('rev-aplicar').disabled = true; document.getElementById('rev-conta').textContent = '';
+      setTimeout(gerar, 650);
+    } else gerar();
+  }
+  document.getElementById('btn-organizar').addEventListener('click', () => abrirRevisao('organizar'));
+  document.querySelectorAll('[data-ia]').forEach((b) => b.addEventListener('click', () => { fecharMenus(); abrirRevisao(b.dataset.ia); }));
+  const fecharRevisao = () => { modal.hidden = true; };
+  document.getElementById('rev-fechar').addEventListener('click', fecharRevisao);
+  document.getElementById('rev-recusar').addEventListener('click', fecharRevisao);
+  modal.addEventListener('click', (e) => { if (e.target === modal) fecharRevisao(); });
+  document.getElementById('rev-aplicar').addEventListener('click', () => {
+    md.value = ops.map((o) => (o.tipo === 'igual' ? o.txt : o.recusada ? o.del : o.ins)).join('');
+    fecharRevisao(); desenharPrevia();
+    document.getElementById('salvo').textContent = 'salvo agora';
+  });
+
+  // publicar / remover do portfólio
+  let publicada = true;
+  const btnPub = document.getElementById('btn-pub');
+  function desenharPub() {
+    const est = document.getElementById('estado-pub');
+    est.className = 'estado-pub' + (publicada ? ' on' : '');
+    est.textContent = publicada ? '● publicada em joaomendes.dev.br' : '○ privada: só você vê';
+    btnPub.textContent = publicada ? 'Remover do portfólio' : 'Publicar no portfólio';
+    btnPub.className = 'btn sm ' + (publicada ? 'perigo' : 'p');
+    document.getElementById('pub-texto').textContent = publicada
+      ? 'Mudanças salvas aqui vão para o site no próximo rebuild, em cerca de 2 minutos.'
+      : 'Publicar dispara o rebuild do portfólio. A nota aparece no site em cerca de 2 minutos.';
+  }
+  btnPub.addEventListener('click', () => { if (convidado) return; publicada = !publicada; desenharPub(); });
+  function aplicarConvidadoNoEditor() {
+    btnPub.disabled = convidado;
+    if (convidado) {
+      const est = document.getElementById('estado-pub');
+      est.className = 'estado-pub'; est.textContent = '○ cópia de exemplo, só neste espaço';
+      btnPub.textContent = 'Publicar no portfólio'; btnPub.className = 'btn sm';
+      document.getElementById('pub-texto').textContent = 'Desativado no modo convidado: nada do que você escreve aqui chega ao portfólio.';
+    }
+    else desenharPub();
+  }
+
+  // ── busca ──
+  const BASE_BUSCA = [
+    { t: 'Configurar o Caddy como proxy reverso', x: 'Container com expose, nunca ports: assim só o Caddy alcança a aplicação. Com ports, o Docker passa por cima do UFW.', tipo: 'tutorial', proj: 'Infra' },
+    { t: 'O Docker passa por cima do firewall', x: 'O container tinha sido publicado com ports, o -p do Docker. O próprio Docker escreve regras no iptables.', tipo: 'pílula', proj: 'Infra' },
+    { t: 'Criar chave SSH dedicada para deploy', x: 'A Action entra na VPS e roda docker build e docker compose up com a chave deploy_key.', tipo: 'tutorial', proj: 'Infra' },
+    { t: 'Goroutines e canais', x: 'O worker do AniDeck roda num binário separado, que no futuro vai ganhar um container próprio.', tipo: 'anotação', proj: 'AniDeck' },
+  ];
+  const semAcento = (s) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+  function buscar() {
+    const termo = document.getElementById('busca').value.trim();
+    const alvo = semAcento(termo);
+    const achados = termo ? BASE_BUSCA.filter((r) => semAcento(r.t + ' ' + r.x).includes(alvo)) : [];
+    const realce = (s) => {
+      if (!alvo) return esc(s);
+      const base = semAcento(s); let out = '', i = 0, j;
+      while ((j = base.indexOf(alvo, i)) !== -1) { out += esc(s.slice(i, j)) + '<mark>' + esc(s.slice(j, j + alvo.length)) + '</mark>'; i = j + alvo.length; }
+      return out + esc(s.slice(i));
+    };
+    const ocorrencias = achados.reduce((n, r) => n + semAcento(r.t + ' ' + r.x).split(alvo).length - 1, 0);
+    document.getElementById('busca-qtd').textContent = termo ? `${achados.length} notas · ${ocorrencias} ocorrências de "${termo}"` : '';
+    document.getElementById('resultados').innerHTML = achados.map((r) => `
+      <div class="resultado"><h3>${realce(r.t)}</h3><p>${realce(r.x)}</p><div class="meta"><span>${r.tipo}</span><span>${r.proj}</span></div></div>`).join('');
+  }
+  document.getElementById('busca').addEventListener('input', buscar);
+  document.getElementById('busca-topo').addEventListener('keydown', (e) => { if (e.key === 'Enter') { document.getElementById('busca').value = e.target.value; buscar(); mostrar('busca'); } });
+  document.addEventListener('keydown', (e) => { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k' && !app.hidden) { e.preventDefault(); document.getElementById('busca-topo').focus(); } });
+  buscar();
+
+  // ── revisão ──
+  document.getElementById('mostrar').addEventListener('click', (e) => { document.getElementById('resposta').hidden = false; e.target.hidden = true; });
+
+  // ── visitas: barras empilhadas ──
+  const dias = ['23', '24', '25', '26', '27', '28', '29', '30', '01', '02', '03', '04', '05', '06'];
+  const port = [8, 10, 7, 12, 9, 14, 11, 16, 20, 18, 34, 41, 29, 33], ani = [4, 5, 3, 6, 4, 7, 5, 6, 8, 7, 11, 12, 9, 10], gri = [1, 2, 1, 2, 1, 3, 2, 2, 3, 2, 4, 5, 3, 4];
+  const max = Math.max(...port.map((v, i) => v + ani[i] + gri[i]));
+  // Empilhado de cima para baixo: portfólio, AniDeck, Grimoire.
+  document.getElementById('barras').innerHTML = dias.map((_, i) => `<div class="barra" title="${port[i] + ani[i] + gri[i]} visitas"><i class="a" style="height:${port[i] / max * 160}px"></i><i class="b" style="height:${ani[i] / max * 160}px"></i><i class="c" style="height:${gri[i] / max * 160}px"></i></div>`).join('');
+  document.getElementById('dias').innerHTML = dias.map((d) => `<span>${d}</span>`).join('');
+
+  // ── painel dos projetos ──
+  const PROJ = [
+    { n: 'Portfólio', d: 'joaomendes.dev.br', ok: true, deploy: 'há 2 h · verde', issues: 1, vis: 268, s: [3, 4, 3, 5, 4, 6, 5, 7, 9, 8, 12, 14, 10, 12] },
+    { n: 'AniDeck', d: 'anideck.joaomendes.dev.br', ok: true, deploy: 'ontem · verde', issues: 11, vis: 97, s: [4, 5, 3, 6, 4, 7, 5, 6, 8, 7, 11, 12, 9, 10] },
+    { n: 'Grimoire', d: 'grimoire.joaomendes.dev.br', ok: true, deploy: 'há 3 dias · verde', issues: 4, vis: 35, s: [1, 2, 1, 2, 1, 3, 2, 2, 3, 2, 4, 5, 3, 4] },
+    { n: 'JVM Console', d: 'este app', ok: true, deploy: 'há 20 min · verde', issues: 6, vis: 12, s: [0, 0, 0, 0, 0, 0, 1, 1, 2, 1, 2, 3, 1, 2] },
+  ];
+  document.getElementById('projetos').innerHTML = PROJ.map((p) => {
+    const m = Math.max(...p.s, 1);
+    return `<div class="proj">
+      <div class="proj-cab"><h3>${p.n}</h3><span class="tag ok">● no ar</span></div>
+      <div class="proj-linha"><span>${p.d}</span><span>resposta 84 ms</span></div>
+      <div class="proj-num"><div><b>${p.vis}</b><span>visitas · 14 dias</span></div><div><b>${p.issues}</b><span>issues abertas</span></div><div><b>99,9%</b><span>no ar · 30 dias</span></div></div>
+      <div class="spark">${p.s.map((v) => `<i style="height:${v / m * 100}%"></i>`).join('')}</div>
+      <div class="proj-linha"><span>último deploy</span><span>${p.deploy}</span></div>
+    </div>`;
+  }).join('');
+</script>
+</body>
+</html>

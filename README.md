@@ -1,35 +1,51 @@
-# __NOME__
+# 🎛️ JVM Console
 
-<!-- MODELO: comentários como este são instruções do modelo. Faça o que pedem e apague.
-Primeiro passo: troque os marcadores em todos os arquivos de uma vez, com Ctrl+Shift+H no
-VS Code. __NOME__ é o nome de exibição (ex.: JVM Console). __SLUG__ é o nome do
-repositório, da pasta no servidor e do container (ex.: jvm-console). __DATA__ é a data
-de criação, no formato dd/mm/aaaa. -->
+Meu painel de controle pessoal: o caderno onde eu anoto o que estudo, escrevo pílulas e
+tutoriais, e de onde publico no portfólio o que vale mostrar. Em fases seguintes, reúne
+também as visitas dos meus sites e o estado de todos os meus projetos.
 
-Uma frase sobre o que o projeto é e para quem ele serve.
+Privado por padrão. Quem visita pode entrar como **convidado**, num espaço só seu, com
+notas de exemplo, que é apagado em 24 horas.
 
-🌐 **No ar:** ainda não. <!-- MODELO: quando estiver, troque pelo endereço real. -->
+🌐 **No ar:** ainda não. Endereço planejado: `console.joaomendes.dev.br`.
+
+> 🕐 **Em planejamento.** Existem o protótipo navegável e esta documentação; o código
+> ainda não começou. O que vem primeiro está no [`docs/ROADMAP.md`](docs/ROADMAP.md).
 
 ---
 
-## 🛠 Stack
+## 🛠 Stack planejada
 
 | Camada | O que é |
 |---|---|
-| **Backend** | |
-| **Banco** | |
-| **Frontend** | |
+| **Backend** | Node.js com Fastify e TypeScript; SQL direto com `pg` |
+| **Banco** | PostgreSQL em container na VPS, com busca de texto em português |
+| **Frontend** | React com Vite, servido pelo próprio Fastify |
+| **Login** | Google, só para a minha conta; quem visita entra como convidado |
+| **IA** | Gemini, só no servidor, para revisar português e sugerir estrutura |
 | **Hospedagem** | VPS própria, em container Docker atrás do Caddy |
 
-## ✨ O que ele faz hoje
+O porquê de cada escolha está no [`docs/DECISIONS.md`](docs/DECISIONS.md).
 
-- Ainda nada: o projeto está em planejamento. O escopo está no
-  [`docs/ROADMAP.md`](docs/ROADMAP.md).
+## ✨ O que ele vai fazer
 
-## 🚀 Rodando localmente
+- **Notas em Markdown**, de três tipos: anotação, pílula e tutorial.
+- **Editor com barra de formatação e prévia ao vivo**, incluindo destaque e cor de texto
+  por uma lista fechada de HTML.
+- **Busca em todas as notas**, sem diferenciar acento.
+- **Publicar e remover do portfólio** com um botão: a pílula aparece em
+  `joaomendes.dev.br` no rebuild seguinte.
+- **Revisão espaçada** das anotações.
+- **Organizar o texto** sem IA e **corrigir o português** com IA, sempre com tela de
+  antes e depois.
+- Depois: **visitas** dos meus sites, sem cookies, e um **painel** com o estado de todos
+  os projetos.
 
-<!-- MODELO: escreva quando houver código. O mínimo: o que precisa estar instalado, os
-comandos, a porta em que o servidor sobe e quais variáveis copiar do .env.example. -->
+## 🎨 Protótipo
+
+O protótipo navegável, com dados fictícios, está em
+[`docs/prototipo/jvm-console-v4.html`](docs/prototipo/jvm-console-v4.html). Baixe e abra
+no navegador.
 
 ## 📚 Documentação
 
@@ -39,11 +55,9 @@ comandos, a porta em que o servidor sobe e quais variáveis copiar do .env.examp
 | [`docs/ROADMAP.md`](docs/ROADMAP.md) | Fases, onde está o MVP e o que vem depois |
 | [`docs/DECISIONS.md`](docs/DECISIONS.md) | O que foi decidido, por quê e o custo aceito |
 | [`docs/PITFALLS.md`](docs/PITFALLS.md) | Armadilhas que já aconteceram, com sintoma e conferência |
-| [`docs/ARQUITETURA.md`](docs/ARQUITETURA.md) | Como o sistema funciona por dentro |
+| [`docs/ARQUITETURA.md`](docs/ARQUITETURA.md) | Como o sistema vai funcionar por dentro |
 | [`docs/PAGES.md`](docs/PAGES.md) | O estado de cada tela |
-| [`docs/API.md`](docs/API.md) | O contrato da API que outro projeto consome |
+| [`docs/API.md`](docs/API.md) | O contrato da API que o portfólio consome |
 | [`sql/README.md`](sql/README.md) | Como o schema do banco é versionado |
-
-<!-- MODELO: apague as linhas dos arquivos opcionais que você removeu (PAGES, API, sql). -->
 
 Faz parte do portfólio [JVM Systems](https://joaomendes.dev.br).

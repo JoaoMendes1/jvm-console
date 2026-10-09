@@ -1,4 +1,4 @@
-# ⚠️ PITFALLS.md — armadilhas do __NOME__
+# ⚠️ PITFALLS.md — armadilhas do JVM Console
 
 > Cada item nasceu de algo que aconteceu neste repositório. Armadilha corrigida **não é
 > apagada**: recebe a marcação de resolvida, com a data, para o raciocínio continuar

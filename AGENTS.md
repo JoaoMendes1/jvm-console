@@ -19,10 +19,17 @@ ajuda de IA, então:
 
 ## Este repositório
 
-**__NOME__** é <!-- MODELO: o que o projeto é, em uma ou duas frases. -->
+**JVM Console** é o meu painel de controle pessoal: caderno de estudo em Markdown
+(anotações, pílulas e tutoriais), publicação de pílulas no portfólio e, em fases
+seguintes, visitas dos sites e estado dos projetos. Visitante entra como convidado, num
+espaço próprio e temporário.
 
-- **Endereço:** <!-- MODELO: https://__SLUG__.joaomendes.dev.br, ou "ainda não está no ar". -->
-- **Stack:** <!-- MODELO: backend, banco, frontend. -->
+- **Estado:** em planejamento. Existem o protótipo (`docs/prototipo/`) e a documentação;
+  ainda não há código. **Não afirme nada sobre código que não existe.**
+- **Endereço planejado:** `console.joaomendes.dev.br`.
+- **Stack:** Fastify com TypeScript, SQL direto com `pg` (nada de ORM), PostgreSQL em
+  container e React com Vite servido pelo Fastify. O porquê está no `docs/DECISIONS.md`;
+  trocar qualquer peça é decisão nova, registrada lá antes do código.
 - **Documentação em `docs/`.** Na raiz ficam só este `AGENTS.md`, que as ferramentas de IA
   procuram ali, e o `README.md`, que é a porta de entrada do repositório.
 - **Repositório público.** Nada de IP, nome de usuário do servidor, conteúdo de `.env`, regra
@@ -30,16 +37,33 @@ ajuda de IA, então:
   comentário. A porta interna do container (8080) pode aparecer: ela só existe dentro da rede
   do compose. A configuração do servidor vive no repositório privado `infra`.
 
-<!-- MODELO: se o repositório for privado, troque o último item por "Repositório privado,
-mas escrito como se fosse público: se um dia abrir, nada aqui precisa ser apagado." -->
-
 ## Regras deste projeto
 
-<!-- MODELO: as regras que valem só aqui e que ninguém pode quebrar sem saber. Cada uma em
-uma linha, com o motivo. Exemplos de outros projetos:
-- "user_id vem sempre do token, nunca do corpo da requisição: senão um usuário lê o dado
-  de outro."
-- "Toda chamada à API externa passa pelo cliente com cache: a cota é pequena." -->
+- **`user_id` vem sempre da sessão, nunca do corpo da requisição**, e entra no `WHERE`
+  de toda consulta. Convidado também é usuário: o espaço de um nunca aparece para outro.
+- **A aplicação conecta no banco com um usuário que não é dono das tabelas.** Dono e
+  superusuário ignoram RLS. No Grimoire, o backend conecta como `postgres` e por isso
+  ignora as policies.
+- **HTML no Markdown só pela lista fechada** (`<mark class="laranja|roxo|verde">` e
+  `<span class="t-…">`), filtrado por biblioteca de sanitização, nunca por regex própria.
+  O portfólio aplica a mesma lista ao renderizar a pílula: mudou a lista aqui, muda lá
+  no mesmo dia.
+- **A chave do Gemini existe só no servidor**, é exclusiva deste projeto (separada da do
+  AniDeck) e tem teto diário de chamadas.
+- **Convidado nunca chama a IA de verdade.** Recebe respostas prontas, geradas antes, para
+  as notas de exemplo.
+- **IA nunca altera a nota sozinha.** Toda sugestão passa pela tela de antes e depois, e
+  cada mudança pode ser recusada.
+- **Visita não guarda cookie nem IP.** Só o hash do dia, com um sal que troca todo dia.
+- **O contrato com o portfólio está no `docs/API.md`.** Mudança que quebra o contrato
+  quebra o build do portfólio: avise antes, mude depois.
+- **Só a minha conta Google entra como dono**, conferida pelo ID da conta
+  (`OWNER_GOOGLE_ID`), nunca pelo e-mail. Qualquer outra pessoa é convidado.
+- **Valor nunca é colado na string do SQL.** Sempre parâmetro (`$1`, `$2`...).
+- **Corpo de pílula vai para o portfólio como Markdown, nunca como MDX:** o MDX executa
+  código durante o build.
+- **Tipos de nota são fixos:** anotação, pílula e tutorial, cada um com comportamento
+  próprio. Classificação livre é tag.
 
 ## Lições de outros projetos que valem aqui
 
