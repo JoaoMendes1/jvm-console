@@ -1,0 +1,23 @@
+name: CI
+
+# MODELO: desligado de propósito. Sem código, um CI a cada push só ficaria vermelho.
+# Quando o projeto tiver package.json, tire o # das três linhas do push.
+on:
+  # push:
+  #   branches: [staging]
+  workflow_dispatch:
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      # MODELO: comandos de um projeto Node. Para Go, troque o setup-node por
+      # actions/setup-go e os comandos por go vet ./..., go test ./... e go build ./...
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
