@@ -6,11 +6,11 @@ e o que vem depois.
 > **Decisão de arquitetura não mora aqui.** Escopo é o que vai ser feito; o porquê vai
 > para o [`DECISIONS.md`](DECISIONS.md).
 
-## 📍 Status (09/10/2026)
+## 📍 Status (12/10/2026)
 
 | Fase | Status |
 |---|---|
-| 0 · Planejamento: protótipo e documentação | 🚀 Em andamento |
+| 0 · Planejamento: protótipo e documentação | ✅ Concluída |
 | 1 · MVP: notas, busca e publicação | 🕐 Planejada |
 | 2 · Estudo e convidado | 🕐 Planejada |
 | 3 · Visitas | 🕐 Planejada |
@@ -29,15 +29,15 @@ Tudo o que não está na Fase 1 vem depois do MVP, por melhor que seja a ideia.
 
 ---
 
-## 🧭 Fase 0: Planejamento (🚀 Em andamento)
+## 🧭 Fase 0: Planejamento (✅ Concluída)
 
 - [x] Protótipo navegável das telas principais (`docs/prototipo/jvm-console-v4.html`)
 - [x] Documentação-base criada a partir do `modelo-projeto`
 - [x] Decisões de arquitetura registradas no `DECISIONS.md`
 - [x] Decisões de stack fechadas: Fastify, React com Vite, login só para o dono, `pg`,
       sanitização, tags livres e SM-2
-- [ ] Decidir quem converte as caixas de aviso para o portfólio
-- [ ] Estudo de caso no portfólio, marcado como em planejamento
+- [x] Caixas de aviso: o portfólio converte no build, com 4 tipos (`API.md`)
+- [x] Estudo de caso no portfólio, marcado como em planejamento
 
 ## 🏗️ Fase 1: MVP: notas, busca e publicação (🕐 Planejada)
 
@@ -57,6 +57,10 @@ Tudo o que não está na Fase 1 vem depois do MVP, por melhor que seja a ideia.
 - [ ] **Busca em todas as notas**, em português e sem diferenciar acento.
 - [ ] **Publicar e remover do portfólio:** API para o build do portfólio e disparo do
       rebuild (ver `API.md`). Endereço e data editáveis antes da primeira publicação.
+- [ ] **Caixas de aviso no portfólio:** a citação com marcador (`> [!TIP]` e os outros
+      3 tipos) vira caixa no build, depois da sanitização, com a cor de cada tipo (ver
+      `API.md`). No Console, o botão de aviso da barra insere o marcador sozinho na
+      linha, como o GitHub exige; o protótipo põe o título na mesma linha.
 - [ ] **Recriar as pílulas atuais** no Console, com o mesmo endereço e a mesma data. Os
       `.mdx` saem do portfólio no mesmo deploy em que ele passa a ler do Console.
 - [ ] **Backup diário** do banco junto da rotina dos outros projetos. Obrigatório antes
@@ -134,6 +138,11 @@ Nenhuma ainda.
   limite zerava abrindo outra sessão. Convidado ficou só com a demonstração.
 
 ## 🔧 Manutenção
+
+### 12/10/2026 — Planejamento concluído
+
+A última decisão pendente, as caixas de aviso, foi fechada, e o estudo de caso está no
+portfólio. O próximo passo é a Fase 1.
 
 ### 06/10/2026 — Projeto criado
 

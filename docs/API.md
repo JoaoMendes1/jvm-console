@@ -68,9 +68,32 @@ ou de convidado nunca aparece aqui.
 Qualquer outra tag ou atributo some. Mudou esta tabela, mudam as duas configurações no
 mesmo dia.
 
-**Caixas de aviso:** no Console, elas são escritas no formato do GitHub (`> [!TIP]`).
-Quem converte para o componente de aviso do portfólio, e como, ainda está em aberto
-(`DECISIONS.md`, pendentes).
+#### Caixas de aviso
+
+No Console, a caixa de aviso é escrita no formato do GitHub: uma citação cuja primeira
+linha tem **só** o marcador do tipo.
+
+```markdown
+> [!TIP]
+> **A lição geral:** separar em duas etapas costuma ser mais confiável.
+```
+
+| Marcador | Tipo |
+|---|---|
+| `[!TIP]` | dica |
+| `[!NOTE]` | nota |
+| `[!WARNING]` | atenção |
+| `[!CAUTION]` | erro |
+
+- **O corpo chega ao portfólio exatamente assim**, sem HTML. Quem transforma a citação em
+  caixa, com a cor de cada tipo, é o portfólio, no build.
+- **A conversão roda depois da `rehype-sanitize`.** A limpeza vê uma citação comum; a
+  classe da caixa vem do código do portfólio, nunca do texto, e a lista fechada acima não
+  muda.
+- **Fora do formato, fica citação comum:** marcador desconhecido (inclusive o
+  `[!IMPORTANT]` do GitHub) ou texto na mesma linha do marcador. Nada some; só não vira
+  caixa.
+- **Tipo novo muda o Console, o portfólio e este arquivo no mesmo dia.**
 
 ## Erros
 

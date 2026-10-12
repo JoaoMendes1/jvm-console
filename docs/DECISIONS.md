@@ -9,17 +9,18 @@
 >
 > Formato: data, decisão, motivo. Entradas mais recentes no topo.
 >
-> **As entradas de 06/10/2026 e 09/10/2026 foram tomadas no planejamento**, antes de
+> **As entradas de 06/10/2026 a 12/10/2026 foram tomadas no planejamento**, antes de
 > existir código, a partir do protótipo v4. Se a implementação mostrar que uma delas não
 > se sustenta, ela ganha entrada nova; esta não é apagada. Versões de biblioteca são
 > conferidas na hora de instalar, pela regra anti-legado do `AGENTS.md`.
 
 | Data | Decisão | Motivo |
 |---|---|---|
+| 12/10/2026 | Caixas de aviso no formato do GitHub (`> [!TIP]`), convertidas pelo portfólio no build, depois da sanitização, com 4 tipos | A API entrega o corpo exatamente como foi escrito, e cada lado desenha a caixa do seu jeito: o Console na prévia, o portfólio no build. A conversão roda depois da `rehype-sanitize`, então a classe da caixa vem do código do portfólio, nunca do texto, e a lista fechada de HTML não cresce. Converter no Console poria HTML no corpo, obrigaria o portfólio a aceitar `aside` com classe e faria o Console conhecer o visual do site. Os 4 tipos (dica, nota, atenção e erro) chegam ao site porque o Console oferece os 4, e a pílula publicada não perde o que foi marcado. O formato está no `API.md`. **Custo aceito:** o reconhecimento do marcador existe nos dois lados, e tipo novo muda o Console, o portfólio e o `API.md` no mesmo dia. |
 | 09/10/2026 | Revisão espaçada com SM-2, gravando o histórico de cada resposta | O Console revisa poucas notas, não milhares de cartões, e o SM-2 cabe em poucas linhas que dá para explicar inteiras. O FSRS acerta mais a previsão, mas com cerca de 20 parâmetros ajustados pelo histórico, difíceis de conferir. Cada resposta fica gravada, então trocar de algoritmo depois não perde nada. **Custo aceito:** intervalos menos precisos que os do FSRS. |
 | 09/10/2026 | Pílulas atuais do portfólio recriadas no Console, com o mesmo endereço e a mesma data | São poucas, e recriar é mais simples que manter duas fontes. O endereço (`slug`) e a data originais são mantidos para não quebrar link já compartilhado. Os `.mdx` saem do portfólio no mesmo deploy em que ele passa a ler do Console, para o site nunca ficar sem pílulas. **Custo aceito:** o Console precisa deixar definir endereço e data antes da primeira publicação. |
 | 09/10/2026 | Tags livres, criadas no Console; o portfólio só confere o formato | A lista fechada do portfólio evitava tag com erro de digitação, mas obrigava a mexer no código para cada tag nova. No Console, o campo de tag sugere as existentes e pede confirmação para criar uma nova. O portfólio aceita qualquer tag que venha da API, desde que em minúsculas, sem espaço e sem acento. **Custo aceito:** a proteção contra erro de digitação passa a depender da confirmação na tela. |
-| 09/10/2026 | Corpo da pílula entra no portfólio como Markdown, nunca como MDX | O MDX executa expressões JavaScript (`{...}`) durante o build. Texto vindo de fora tratado como MDX seria código de terceiro rodando no build do site. **Custo aceito:** pílula vinda do Console não usa os componentes MDX do portfólio; as caixas de aviso são convertidas (ver pendentes). |
+| 09/10/2026 | Corpo da pílula entra no portfólio como Markdown, nunca como MDX | O MDX executa expressões JavaScript (`{...}`) durante o build. Texto vindo de fora tratado como MDX seria código de terceiro rodando no build do site. **Custo aceito:** pílula vinda do Console não usa os componentes MDX do portfólio; as caixas de aviso são convertidas pelo portfólio (ver entrada de 12/10/2026). |
 | 09/10/2026 | Sanitização com DOMPurify no Console e rehype-sanitize no portfólio | A DOMPurify é a biblioteca mais usada e testada para limpar HTML no navegador, onde a prévia é desenhada. A rehype-sanitize entra na cadeia que o Astro já usa para transformar Markdown em HTML. As duas recebem a mesma lista fechada. **Custo aceito:** duas configurações para manter iguais; a lista fica escrita no `API.md`. |
 | 09/10/2026 | Acesso ao banco com `pg` e SQL escrito à mão, sempre com parâmetros (`$1`) | O schema é versionado à mão em `sql/`; um ORM quer gerar as próprias migrações e criaria uma segunda fonte de verdade. As partes difíceis do projeto (busca em português, RLS, usuário da sessão passado ao banco) são SQL puro, e cada consulta fica explicável. **Custo aceito:** os tipos das linhas são escritos à mão, validados com Zod, e nenhum valor pode ser colado na string do SQL. |
 | 09/10/2026 | Login com Google restrito à minha conta, pelo ID da conta; sessão guardada no PostgreSQL | O Google prova quem a pessoa é; o servidor decide se ela entra, comparando o ID da conta (que nunca muda, ao contrário do e-mail) com o do `.env`. Qualquer outra pessoa entra como convidado. Com a sessão no banco, dá para derrubar uma sessão. O fluxo usa o plugin oficial `@fastify/oauth2`. **Custo aceito:** perder o acesso à conta Google é perder o acesso ao Console. |
@@ -48,6 +49,4 @@
 
 Questões abertas, registradas para não se perderem. Cada uma diz **o que ela bloqueia**.
 
-- **Caixas de aviso: quem converte o formato do GitHub (`> [!TIP]`) para o componente de
-  aviso do portfólio, e como?** Pode ser o Console, ao entregar pela API, ou o portfólio,
-  no build. Bloqueia o publicar da Fase 1.
+Nenhuma no momento.
