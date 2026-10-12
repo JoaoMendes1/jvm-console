@@ -11,7 +11,7 @@ e o que vem depois.
 | Fase | Status |
 |---|---|
 | 0 · Planejamento: protótipo e documentação | ✅ Concluída |
-| 1 · MVP: notas, busca e publicação | 🕐 Planejada |
+| 1 · MVP: notas, busca e publicação | 🚧 Em andamento |
 | 2 · Estudo e convidado | 🕐 Planejada |
 | 3 · Visitas | 🕐 Planejada |
 | 4 · Painel dos projetos | 🕐 Planejada |
@@ -39,8 +39,10 @@ Tudo o que não está na Fase 1 vem depois do MVP, por melhor que seja a ideia.
 - [x] Caixas de aviso: o portfólio converte no build, com 4 tipos (`API.md`)
 - [x] Estudo de caso no portfólio, marcado como em planejamento
 
-## 🏗️ Fase 1: MVP: notas, busca e publicação (🕐 Planejada)
+## 🏗️ Fase 1: MVP: notas, busca e publicação (� Em andamento)
 
+- [x] **Esqueleto do servidor:** Fastify com TypeScript, ainda sem funcionalidade, e CI
+      na `staging` (#1).
 - [ ] **Login com Google só para a minha conta**, com sessão guardada no banco. Quem não
       é o dono vê a opção de entrar como convidado.
 - [ ] **Schema inicial em `sql/`**: usuários, sessões, notas, projetos, tags e versões.
@@ -139,7 +141,10 @@ Nenhuma ainda.
 
 ## 🔧 Manutenção
 
-### 12/10/2026 — Planejamento concluído
+### 12/10/2026 — Fase 1 começou
+
+O esqueleto do servidor e o CI na `staging` estão no repositório. Nada está no ar: o
+deploy continua desligado até o servidor estar pronto.
 
 A última decisão pendente, as caixas de aviso, foi fechada, e o estudo de caso está no
 portfólio. O próximo passo é a Fase 1.

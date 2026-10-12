@@ -9,8 +9,8 @@ notas de exemplo, que é apagado em 24 horas.
 
 🌐 **No ar:** ainda não. Endereço planejado: `console.joaomendes.dev.br`.
 
-> 🕐 **Em planejamento.** Existem o protótipo navegável e esta documentação; o código
-> ainda não começou. O que vem primeiro está no [`docs/ROADMAP.md`](docs/ROADMAP.md).
+> 🏗️ **Fase 1 em andamento.** Existe o esqueleto do servidor, ainda sem nenhuma
+> funcionalidade. O que vem a seguir está no [`docs/ROADMAP.md`](docs/ROADMAP.md).
 
 ---
 
@@ -46,6 +46,17 @@ O porquê de cada escolha está no [`docs/DECISIONS.md`](docs/DECISIONS.md).
 O protótipo navegável, com dados fictícios, está em
 [`docs/prototipo/jvm-console-v4.html`](docs/prototipo/jvm-console-v4.html). Baixe e abra
 no navegador.
+
+## ▶️ Rodar localmente
+
+Precisa do Node 24.
+
+```bash
+npm install
+npm run dev
+```
+
+O servidor sobe em `http://localhost:8080`. Por enquanto, toda rota responde 404.
 
 ## 📚 Documentação
 

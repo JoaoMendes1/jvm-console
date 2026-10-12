@@ -1,0 +1,22 @@
+{
+  "name": "jvm-console",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Painel pessoal: caderno de estudo em Markdown e publicação das pílulas no portfólio.",
+  "type": "module",
+  "engines": {
+    "node": "24.x"
+  },
+  "scripts": {
+    "dev": "node --env-file-if-exists=.env --watch src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js"
+  },
+  "dependencies": {
+    "fastify": "^5.12.5"
+  },
+  "devDependencies": {
+    "@types/node": "^24.19.2",
+    "typescript": "^7.0.2"
+  }
+}

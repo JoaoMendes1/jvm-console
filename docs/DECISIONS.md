@@ -9,13 +9,16 @@
 >
 > Formato: data, decisão, motivo. Entradas mais recentes no topo.
 >
-> **As entradas de 06/10/2026 a 12/10/2026 foram tomadas no planejamento**, antes de
-> existir código, a partir do protótipo v4. Se a implementação mostrar que uma delas não
-> se sustenta, ela ganha entrada nova; esta não é apagada. Versões de biblioteca são
-> conferidas na hora de instalar, pela regra anti-legado do `AGENTS.md`.
+> **As entradas de 06/10/2026 até a das caixas de aviso (12/10/2026) foram tomadas no
+> planejamento**, antes de existir código, a partir do protótipo v4. Se a implementação
+> mostrar que uma delas não se sustenta, ela ganha entrada nova; esta não é apagada.
+> Versões de biblioteca são conferidas na hora de instalar, pela regra anti-legado do
+> `AGENTS.md`.
 
 | Data | Decisão | Motivo |
 |---|---|---|
+| 12/10/2026 | Sem testes automatizados por enquanto: cada entrega é conferida rodando o app no localhost | Escolha minha para este projeto: a conferência é na prática, usando a tela e a rota de verdade, sem arquivo de teste. O CI continua na `staging` e confere que o código compila. **Custo aceito:** nada prova sozinho que o que já funcionava continua funcionando depois de uma mudança; a conferência manual precisa ser refeita a cada entrega. O item da Fase 1 que pede teste da sanitização continua no `ROADMAP.md` e é reavaliado quando chegar a vez dele. |
+| 12/10/2026 | Node 24 e TypeScript 7; em desenvolvimento o Node roda o `.ts` direto, em produção roda o JavaScript gerado pelo `tsc` | O Node 24 é o LTS ativo hoje; o 26 só vira LTS em 28/10/2026. Ele apaga os tipos e roda o `.ts` sem `tsx` nem `ts-node`: uma dependência a menos, e o que roda no `npm run dev` é o arquivo aberto no editor. Em produção, o `tsc` confere os tipos e gera o `dist/`, e o container roda só JavaScript. A versão do Node mora no `engines` do `package.json`, que o CI lê. **Custo aceito:** só vale sintaxe que dá para apagar (nada de `enum` e `namespace`, acusados pelo `erasableSyntaxOnly`); imports relativos levam `.ts`, reescritos para `.js` no build; e passar para o Node 26 é uma atualização a fazer depois de 28/10. |
 | 12/10/2026 | Caixas de aviso no formato do GitHub (`> [!TIP]`), convertidas pelo portfólio no build, depois da sanitização, com 4 tipos | A API entrega o corpo exatamente como foi escrito, e cada lado desenha a caixa do seu jeito: o Console na prévia, o portfólio no build. A conversão roda depois da `rehype-sanitize`, então a classe da caixa vem do código do portfólio, nunca do texto, e a lista fechada de HTML não cresce. Converter no Console poria HTML no corpo, obrigaria o portfólio a aceitar `aside` com classe e faria o Console conhecer o visual do site. Os 4 tipos (dica, nota, atenção e erro) chegam ao site porque o Console oferece os 4, e a pílula publicada não perde o que foi marcado. O formato está no `API.md`. **Custo aceito:** o reconhecimento do marcador existe nos dois lados, e tipo novo muda o Console, o portfólio e o `API.md` no mesmo dia. |
 | 09/10/2026 | Revisão espaçada com SM-2, gravando o histórico de cada resposta | O Console revisa poucas notas, não milhares de cartões, e o SM-2 cabe em poucas linhas que dá para explicar inteiras. O FSRS acerta mais a previsão, mas com cerca de 20 parâmetros ajustados pelo histórico, difíceis de conferir. Cada resposta fica gravada, então trocar de algoritmo depois não perde nada. **Custo aceito:** intervalos menos precisos que os do FSRS. |
 | 09/10/2026 | Pílulas atuais do portfólio recriadas no Console, com o mesmo endereço e a mesma data | São poucas, e recriar é mais simples que manter duas fontes. O endereço (`slug`) e a data originais são mantidos para não quebrar link já compartilhado. Os `.mdx` saem do portfólio no mesmo deploy em que ele passa a ler do Console, para o site nunca ficar sem pílulas. **Custo aceito:** o Console precisa deixar definir endereço e data antes da primeira publicação. |

@@ -24,8 +24,8 @@ ajuda de IA, então:
 seguintes, visitas dos sites e estado dos projetos. Visitante entra como convidado, num
 espaço próprio e temporário.
 
-- **Estado:** em planejamento. Existem o protótipo (`docs/prototipo/`) e a documentação;
-  ainda não há código. **Não afirme nada sobre código que não existe.**
+- **Estado:** Fase 1 em andamento. Existe o esqueleto do servidor em `src/`, ainda sem
+  nenhuma funcionalidade e fora do ar. **Não afirme nada sobre o código sem ver o arquivo.**
 - **Endereço planejado:** `console.joaomendes.dev.br`.
 - **Stack:** Fastify com TypeScript, SQL direto com `pg` (nada de ORM), PostgreSQL em
   container e React com Vite servido pelo Fastify. O porquê está no `docs/DECISIONS.md`;
@@ -64,6 +64,11 @@ espaço próprio e temporário.
   código durante o build.
 - **Tipos de nota são fixos:** anotação, pílula e tutorial, cada um com comportamento
   próprio. Classificação livre é tag.
+- **TypeScript só com sintaxe que o Node consegue apagar:** nada de `enum` nem
+  `namespace`. O `npm run dev` roda o `.ts` direto, e o `tsc` acusa o que não der para
+  apagar. Import relativo leva a extensão `.ts` (`./app.ts`).
+- **Sem testes automatizados por enquanto** (ver `docs/DECISIONS.md`). A conferência é
+  rodando o app no localhost. Não crie arquivo de teste sem combinar antes.
 
 ## Lições de outros projetos que valem aqui
 

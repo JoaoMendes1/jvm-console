@@ -1,11 +1,14 @@
 name: CI
 
-# MODELO: desligado de propósito. Sem código, um CI a cada push só ficaria vermelho.
-# Quando o projeto tiver package.json, tire o # das três linhas do push.
+# Roda a cada push na staging. Só com tudo verde a staging pode ir para a main.
 on:
-  # push:
-  #   branches: [staging]
+  push:
+    branches: [staging]
   workflow_dispatch:
+
+# O token que a Action recebe só lê o repositório: o CI não precisa escrever nada.
+permissions:
+  contents: read
 
 jobs:
   ci:
@@ -14,10 +17,8 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
-          node-version: 24
+          # A versão do Node vem do "engines" do package.json: um fato, um lugar.
+          node-version-file: package.json
           cache: npm
-      # MODELO: comandos de um projeto Node. Para Go, troque o setup-node por
-      # actions/setup-go e os comandos por go vet ./..., go test ./... e go build ./...
       - run: npm ci
       - run: npm test
-      - run: npm run build
