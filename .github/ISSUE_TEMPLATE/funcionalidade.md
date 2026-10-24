@@ -2,8 +2,12 @@
 name: Funcionalidade
 about: Algo novo, ou uma mudança de comportamento
 title: "feat: "
-labels: enhancement
+labels: feature
 ---
+
+<!-- Antes de salvar, no painel ao lado: as labels de área (e o milestone, se o projeto
+usar). Se for aprimoramento de algo que já existe, troque feature por enhancement. Se
+envolver escolha estrutural, adicione decision. -->
 
 ### 🎯 Objetivo
 
@@ -13,7 +17,9 @@ labels: enhancement
 
 - [ ] Passo técnico 1
 - [ ] Passo técnico 2
-- [ ] Atualizar `docs/ROADMAP.md` (e `DECISIONS.md`, se houver decisão estrutural)
+- [ ] Atualizar `docs/ROADMAP.md` (e `docs/DECISIONS.md`, se houver decisão estrutural)
+- [ ] Atualizar `docs/ARQUITETURA.md`, `docs/API.md` e `docs/PAGES.md`, se o funcionamento,
+      o contrato ou uma tela mudarem
 
 ### ✅ Critérios de aceite
 

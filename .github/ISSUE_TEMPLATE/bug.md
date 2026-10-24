@@ -5,6 +5,9 @@ title: "fix: "
 labels: bug
 ---
 
+<!-- Antes de salvar, no painel ao lado: as labels de área (e o milestone, se o projeto
+usar). Se o bug for uma falha de segurança, adicione security. -->
+
 ### 🐞 Sintoma
 
 <!-- O que aparece para quem usa, exatamente como aparece: mensagem, tela, código HTTP. -->
@@ -26,4 +29,5 @@ labels: bug
 ### ✅ Critérios de aceite
 
 - [ ] O passo a passo acima não reproduz mais o problema
-- [ ] Conferido em produção depois do deploy
+- [ ] Conferido no ambiente publicado depois do deploy, ou rodando localmente se o projeto
+      ainda não estiver no ar

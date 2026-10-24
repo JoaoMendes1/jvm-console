@@ -39,7 +39,7 @@ Tudo o que não está na Fase 1 vem depois do MVP, por melhor que seja a ideia.
 - [x] Caixas de aviso: o portfólio converte no build, com 4 tipos (`API.md`)
 - [x] Estudo de caso no portfólio, marcado como em planejamento
 
-## 🏗️ Fase 1: MVP: notas, busca e publicação (� Em andamento)
+## 🏗️ Fase 1: MVP: notas, busca e publicação (🚧 Em andamento)
 
 - [x] **Esqueleto do servidor:** Fastify com TypeScript, ainda sem funcionalidade, e CI
       na `staging` (#1).

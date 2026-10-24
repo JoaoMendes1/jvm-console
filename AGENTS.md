@@ -1,43 +1,33 @@
 # AGENTS.md
 
-> Instruções para qualquer IA (chat ou agente de código) que for trabalhar comigo neste
-> repositório. Se você é uma ferramenta agentic (Claude Code, Cursor, Codex CLI etc.), leia
-> isto antes de qualquer tarefa. Se for um chat que não lê arquivos sozinho, colei este
-> conteúdo como primeira mensagem.
-
-## Quem sou eu / como quero trabalhar
-
-Considero-me **iniciante** na maior parte destas stacks. Construo boa parte do código com
-ajuda de IA, então:
-
-- **Sempre explique o porquê**, não só o quê. Se uma escolha técnica não for óbvia, explique
-  antes de implementar.
-- Priorize soluções que eu consiga entender e defender numa entrevista técnica, não a mais
-  "avançada" ou abstrata possível.
-- **Discorde quando eu estiver errado.** Prefiro ser corrigido a ser concordado por educação.
-- Se eu pedir algo que pule uma etapa de entendimento, pode perguntar antes de obedecer.
+> Regras para quem trabalha neste repositório, pessoa ou IA. Ferramentas de IA (Claude Code,
+> Cursor, Codex CLI etc.) leem este arquivo antes de qualquer tarefa.
 
 ## Este repositório
 
-**JVM Console** é o meu painel de controle pessoal: caderno de estudo em Markdown
-(anotações, pílulas e tutoriais), publicação de pílulas no portfólio e, em fases
-seguintes, visitas dos sites e estado dos projetos. Visitante entra como convidado, num
-espaço próprio e temporário.
+**JVM Console** é um painel de controle pessoal: caderno de estudo em Markdown (anotações,
+pílulas e tutoriais), publicação de pílulas no portfólio e, em fases seguintes, visitas dos
+sites e estado dos projetos. Visitante entra como convidado, num espaço próprio e temporário.
 
 - **Estado:** Fase 1 em andamento. Existe o esqueleto do servidor em `src/`, ainda sem
-  nenhuma funcionalidade e fora do ar. **Não afirme nada sobre o código sem ver o arquivo.**
+  nenhuma funcionalidade e fora do ar.
 - **Endereço planejado:** `console.joaomendes.dev.br`.
-- **Stack:** Fastify com TypeScript, SQL direto com `pg` (nada de ORM), PostgreSQL em
-  container e React com Vite servido pelo Fastify. O porquê está no `docs/DECISIONS.md`;
-  trocar qualquer peça é decisão nova, registrada lá antes do código.
+- **Stack:** Fastify com TypeScript, SQL direto com `pg` (sem ORM), PostgreSQL em container e
+  React com Vite servido pelo Fastify. O porquê está no `docs/DECISIONS.md`; trocar qualquer
+  peça é decisão nova, registrada lá antes do código.
 - **Documentação em `docs/`.** Na raiz ficam só este `AGENTS.md`, que as ferramentas de IA
-  procuram ali, e o `README.md`, que é a porta de entrada do repositório.
+  procuram ali, e o `README.md`, a porta de entrada do repositório.
 - **Repositório público.** Nada de IP, nome de usuário do servidor, conteúdo de `.env`, regra
   de firewall ou porta aberta para a internet entra aqui, nem em documentação, nem em
-  comentário. A porta interna do container (8080) pode aparecer: ela só existe dentro da rede
-  do compose. A configuração do servidor vive no repositório privado `infra`.
+  comentário. A porta interna do container (8080) pode aparecer: só existe na rede do compose.
+- **A infraestrutura do servidor é mantida no repositório privado `infra`:** compose de
+  produção e proxy. DNS, backup e variáveis do servidor também ficam fora daqui. Quando uma
+  mudança exigir algo no servidor (serviço no compose, subdomínio, variável nova), indique o
+  que precisa mudar lá.
 
 ## Regras deste projeto
+
+Valem só aqui. Cada uma com o motivo, para não ser quebrada sem saber o custo.
 
 - **`user_id` vem sempre da sessão, nunca do corpo da requisição**, e entra no `WHERE`
   de toda consulta. Convidado também é usuário: o espaço de um nunca aparece para outro.
@@ -72,101 +62,110 @@ espaço próprio e temporário.
 
 ## Lições de outros projetos que valem aqui
 
-Cada uma já custou caro em outro repositório. Não precisam ser redescobertas.
+Cada uma já custou caro em outro repositório.
 
 - **Erro de serviço de terceiro é `503`, nunca `500`.** `500` diz "o meu código quebrou";
-  `503` diz "um serviço do qual eu dependo está fora". O motivo vai no corpo da resposta.
+  `503`, "um serviço do qual eu dependo está fora". O motivo vai no corpo da resposta.
 - **Variável de ambiente obrigatória faltando derruba o boot**, com o nome dela no log. Falha
   tardia, no meio de uma requisição, esconde que a causa era configuração.
-- **Schema do banco vive em `sql/`, em arquivos numerados.** Nunca `CREATE TABLE IF NOT
-  EXISTS` no boot: ele cria, mas nunca altera, e esconde a diferença entre o código e o banco.
-- **Container nunca publica porta com `ports`.** O proxy alcança a aplicação pela rede interna
-  do compose (`expose`). Porta publicada fica aberta para a internet mesmo sem regra no
-  firewall.
-- **Texto do usuário nunca vai direto para `innerHTML`.** Escapar primeiro; HTML permitido só
-  por lista fechada, com biblioteca de sanitização, nunca com regex própria.
-- **Chave de API fica no servidor.** O que vai para o navegador, qualquer visitante lê.
+- **Recurso de outro usuário responde `404`, não `403`.** O `403` confirma que o recurso
+  existe.
+- **Schema versionado em `sql/`, em arquivos numerados**, e arquivo aplicado nunca é editado.
+  Nunca `CREATE TABLE IF NOT EXISTS` no boot: cria, mas nunca altera, e esconde a diferença
+  entre o código e o banco.
+- **No servidor, nenhum container publica porta com `ports`.** O proxy alcança a aplicação
+  pela rede interna (`expose`); porta publicada fica aberta mesmo sem regra no firewall.
+- **Fim de linha LF em todos os arquivos**, pelo `.gitattributes`. Script com CRLF quebra no
+  container Linux com um erro que não aponta a causa.
+- **Segredo fica no servidor.** O que vai para o navegador, qualquer visitante lê, inclusive
+  as variáveis que o build do frontend embute.
 
 ## Fluxo de trabalho obrigatório
 
-1. **Toda alteração com decisão nasce de uma issue**, escrita **antes** do código. O GitHub
-   já abre o formulário no formato certo (`.github/ISSUE_TEMPLATE/`): **Funcionalidade** ou
-   **Bug**.
+1. **Toda alteração com decisão nasce de uma issue**, escrita antes do código, por um dos
+   modelos em `.github/ISSUE_TEMPLATE/`: **Funcionalidade** ou **Bug**. A issue é
+   obrigatória quando a alteração:
+   - mexe em schema, dado de usuário, autenticação ou regra de negócio;
+   - corrige bug, de qualquer tamanho: a causa é o que mais ensina, e some se não for escrita;
+   - envolve escolha estrutural: biblioteca nova, padrão de componente, navegação;
+   - muda como o projeto sobe ou é publicado: compose, `Dockerfile`, CI, deploy.
 
-   A issue é obrigatória quando a alteração:
-   - mexe em **schema, dado de usuário, autenticação ou regra de negócio**;
-   - é **correção de bug**, de qualquer tamanho: bug pequeno costuma ter causa interessante,
-     e é ela que some se não for escrita;
-   - envolve **escolha estrutural**: biblioteca nova, padrão de componente, navegação.
+   Dispensam issue: texto de interface, ajuste visual dentro do padrão, documentação,
+   configuração do repositório, refatoração sem mudança de comportamento e atualização de
+   dependência sem mudança de código (`chore(deps)`). Na dúvida: daqui a três meses, alguém
+   vai perguntar "por que foi feito assim?"? Se sim, abre issue.
 
-   Dispensam issue: texto de interface, ajuste visual dentro do padrão existente,
-   documentação e refatoração sem mudança de comportamento.
+2. **Toda alteração entra primeiro na branch `staging`**, nunca direto na `main`. O CI roda a
+   cada push na `staging`, e só se promove com ele verde. A `main` é a versão publicada: com o
+   deploy ligado, o push nela publica.
 
-   **Na dúvida, o teste:** daqui a três meses, alguém (inclusive eu) vai perguntar "por que
-   foi feito assim?". Se sim, abre issue.
+3. **Commits:** `tipo(escopo): descrição curta (closes #NN)`. Tipos: `feat`, `fix`,
+   `refactor`, `docs`, `chore`. Escopos usados aqui: `api`, `ui`, `banco`, `ci`, `deploy` e
+   `infra` (documentação e configuração). O `closes #NN` só fecha a issue quando o commit
+   chega à `main`.
 
-2. **Toda alteração é feita primeiro na branch `staging`**, nunca direto na `main`. O CI roda
-   a cada push na `staging`; a `main` publica.
+**Labels:** catálogo do `modelo-projeto`, nome em inglês e descrição em português. Toda issue
+recebe um tipo e uma ou mais áreas. Os modelos de issue aplicam `feature` e `bug` pelo nome
+exato: renomear uma delas faz o modelo deixar de aplicá-la, sem erro.
 
-3. **Commits seguem este padrão:**
+| Grupo | Labels |
+|---|---|
+| Tipo | `feature`, `enhancement`, `bug`, `security`, `refactor`, `documentation`, `chore`, `decision` |
+| Área | `backend`, `frontend`, `database`, `auth`, `infra`, `integration`, `ai`, `mobile`, `ui/ux` |
 
-```
-   tipo(escopo): descrição curta (closes #NN)
-```
+**Quadro** (GitHub Projects): **Todo → In Progress → Staging Done → Done**.
 
-   Tipos: `feat`, `fix`, `refactor`, `docs`, `chore`. O escopo é a área (`api`, `ui`,
-   `banco`, `deploy`...). O `closes #NN` só fecha a issue quando o commit chega à `main`.
-
-### Sequência de comandos
+- A issue nova entra sozinha em Todo, pelo auto-add; a fechada vai sozinha para Done.
+- A passagem para Staging Done é manual: o `closes` só age na `main`.
+- Nunca arraste um cartão para Done à mão: isso fecha a issue antes de o código chegar à
+  `main`.
 
 ```bash
-# 1. Garantir que a staging local está atualizada
+# 1. Staging local atualizada
 git checkout staging
 git pull origin staging
 
-# 2. Conferir o que mudou antes de commitar
-git status
-git diff
+# 2. Preparar e conferir, numa passada só, o que vai entrar no commit
+git add -A && git status && git --no-pager diff --cached -M
 
-# 3. Commitar no padrão e subir para a staging (dispara o CI)
-git add <arquivos alterados>
+# 3. Commitar e subir para a staging (dispara o CI)
 git commit -m "tipo(escopo): descrição curta (closes #NN)"
 git push origin staging
 
-# 4. Só com o CI verde: promover para a main (dispara o deploy)
+# 4. Com o CI verde: promover e voltar à staging
 git checkout main
 git pull origin main
 git merge staging --no-edit
 git push origin main
+git checkout staging
 ```
 
-- `--no-edit` evita que o merge abra o Vim pedindo mensagem.
-- **Revert sempre pelo código do commit** (`git revert a1b2c3d`), nunca por `HEAD`: depois de
-  um merge, `HEAD` pode não ser o commit que você pensa.
-- **Verde na Action não garante código novo.** Ela reporta sucesso mesmo quando o `git pull`
-  do servidor não trouxe nada. Antes de acusar o deploy, confira se o commit esperado está na
+- `--no-edit` evita que o merge abra o Vim.
+- **Revert sempre pelo código do commit** (`git revert a1b2c3d`), nunca por `HEAD`.
+- **Action verde não garante código novo.** Antes de acusar o deploy, confira o commit na
   `main` do GitHub e no `git log --oneline -3` do servidor.
+- **Em mais de uma máquina:** push antes de sair de uma, pull antes de começar na outra.
 
 ## Regras de código
 
-4. **Comentários explicam o quê e o porquê.** Número de issue (`#43`) não entra no código:
-   fica na issue e no commit.
+Prefira a solução simples e defensável à mais abstrata: todo código daqui precisa poder ser
+explicado, linha por linha, por quem o mantém.
 
-5. **Segurança não é uma fase separada.** Funcionalidade que lida com entrada de usuário,
-   autenticação ou dado sensível já nasce com validação. Não se deixa para depois.
+4. **Comentários explicam o quê e o porquê**, em tom formal e impessoal, numa linha sempre
+   que possível, e só onde o porquê não é óbvio. Número de issue não entra no código.
 
-6. **Verificação de dependências (anti-legado).** Antes de propor qualquer pacote, SDK, API
-   ou versão de Action, confira se é a versão atual e mantida. Não confie em dado de
-   treinamento: pacote obsoleto (deprecated) ou em fim de vida não entra. Sem certeza, avise
-   ou pesquise antes de gerar o código.
+5. **Segurança não é uma fase separada.** Entrada de usuário, autenticação e dado sensível já
+   nascem com validação.
 
-7. **Suspeita não é achado.** Não aponte problema sem o arquivo na mão. Levantar cinco
-   hipóteses de uma vez transfere para mim o trabalho de verificar todas. Peça o arquivo, ou o
+6. **Verificação de dependências.** Antes de propor pacote, SDK, API ou versão de Action,
+   confira se é a versão atual e mantida. Pacote obsoleto ou em fim de vida não entra. Sem
+   certeza, pesquise antes de gerar o código.
+
+7. **Suspeita não é achado.** Não aponte problema sem o arquivo na mão. Peça o arquivo, ou o
    `grep` que localiza os pontos de uso, e só então conclua.
 
-8. **Code review antes do commit, quando vale a pena.** Para mudança não trivial (feature
-   nova, autenticação, dado sensível), colo a saída de `git diff` no chat para revisão antes
-   de commitar. Ajuste pequeno não precisa parar o fluxo.
+8. **Revisão antes do commit** em mudança não trivial (feature nova, autenticação, dado
+   sensível): a saída de `git diff --cached` é lida antes do commit.
 
 ## Regras de documentação
 
@@ -174,53 +173,23 @@ git push origin main
 
    | Arquivo | O que mora nele |
    |---|---|
-   | `docs/ROADMAP.md` | Escopo: fases, MVP, dívidas, ideias. A cada entrega, no mesmo push: itens marcados com `[x]` e a issue, e a tabela de status atualizada |
-   | `docs/DECISIONS.md` | Decisões estruturais (arquitetura, banco, auth, framework), com o motivo e o custo aceito. Não é log de commit |
-   | `docs/PITFALLS.md` | Armadilhas que já aconteceram. Corrigida é marcada, nunca apagada |
-   | `docs/ARQUITETURA.md` | Como o sistema funciona hoje. Mudou o funcionamento, muda o arquivo no mesmo commit |
+   | `docs/ROADMAP.md` | Escopo: fases, MVP, dívidas, ideias. A cada entrega, no mesmo push: itens marcados com `[x]` e a issue, e a tabela de status |
+   | `docs/DECISIONS.md` | Decisões estruturais, com o porquê e o custo aceito. Não é log de commit |
+   | `docs/PITFALLS.md` | Falhas silenciosas que já aconteceram. Corrigida é marcada, nunca apagada |
+   | `docs/ARQUITETURA.md` | Como o sistema funciona hoje. Mudou o funcionamento, muda no mesmo commit |
    | `docs/PAGES.md` | Estado de cada tela |
-   | `docs/API.md` | O contrato com quem consome a API. Mudança que quebra o contrato exige aviso antes |
+   | `docs/API.md` | O contrato com o portfólio. Mudança que quebra o contrato exige aviso antes |
    | `sql/` | Schema versionado. Arquivo aplicado nunca é editado |
 
-10. **Fase nova não vai para o fim da fila.** Se uma fase revela dívida ou requisito novo, a
-    correção vira fase intermediária (ex.: 3.5), entre as duas que a originaram.
+10. **Fase nova não vai para o fim da fila.** Dívida ou requisito descoberto no caminho vira
+    fase intermediária (ex.: 3.5), entre as duas que a originaram.
 
-11. **Armadilha conhecida tem pergunta obrigatória.** Se a tarefa toca a área de uma
-    armadilha do `docs/PITFALLS.md`, responda a pergunta dela explicitamente, com o arquivo
-    real na mão, não de memória.
-
-## Como me passar alterações
-
-12. **Arquivo inteiro** quando a mudança passa de três pontos do mesmo arquivo.
-
-13. **Edição por trecho (Ctrl+F)** para mudança pequena num arquivo que já existe:
-    - informar o arquivo e se o passo é no **editor** ou no **terminal**;
-    - mostrar o **trecho atual completo**, copiado do arquivo, para eu localizar com Ctrl+F:
-      nunca número de linha, e nunca um fragmento que apareça mais de uma vez;
-    - mostrar o **trecho novo completo**, que substitui o anterior;
-    - se for inserção, dizer se entra **antes** ou **depois** do trecho localizado.
-
-    Se o Ctrl+F não encontrar o trecho, **pare**: o arquivo não está no estado que a instrução
-    supõe. Sem a versão atual do arquivo, peça antes.
-
-14. **Código e arquivos de texto vão no chat, em bloco de código.** Nunca arquivo para baixar
-    e nunca zip. Para arquivo novo: a pasta, o nome exato e como criar no VS Code.
-
-15. **Diga onde o comando roda:** no notebook ou no servidor, no terminal ou no editor.
-
-## Tom da conversa
-
-Prefiro uma conversa natural, não uma troca robotizada de comandos. Pode explicar, sugerir,
-discordar ou perguntar. As regras acima são sobre *processo* (como o código chega ao
-repositório), não sobre como a conversa deve soar.
+11. **Armadilha conhecida tem pergunta obrigatória.** Tarefa que toca a área de uma armadilha
+    do `docs/PITFALLS.md` responde a pergunta dela, com o arquivo real na mão.
 
 ## Este projeto no portfólio
 
-Meus projetos aparecem no portfólio **JVM Systems** (`joaomendes.dev.br`, repositório
-`jvm-systems`). Este projeto entra no site por um arquivo em `src/content/projetos/`, seguindo
-o `docs/CONTEUDO.md` daquele repositório.
-
-- **O site não afirma nada que o código não sustente.** Estado, fase, stack e capa do
-  estudo de caso acompanham este repositório.
-- **Mudou o projeto, muda o `.mdx`.** Entrega que muda o que o estudo de caso diz exige
-  atualizar o portfólio junto.
+Este projeto aparece no portfólio **JVM Systems** (`joaomendes.dev.br`, repositório
+`jvm-systems`), por um arquivo em `src/content/projetos/`. O site não afirma nada que o
+código não sustente: entrega que muda o estado, a fase, a stack ou a capa muda também o
+estudo de caso.
